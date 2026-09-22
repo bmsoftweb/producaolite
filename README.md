@@ -40,6 +40,11 @@ Do ERP: `PRODUTOSPRINCIPAL`, `PRODUTOSREFERENCIA`, `PRODUTOSREFEMPRESA`, `PRODUT
 
 ## Histórico
 
+### 1.0.1
+- PWA: manifesto, ícones (normal e maskable) e service worker próprios, sem dependência
+  nova. O service worker só é registrado na versão compilada e não guarda nada de `/api`:
+  o cache serve apenas para abrir a tela sem rede, já que os dados vêm da bmAPI.
+
 ### 1.0.0
 - Primeira versão publicada.
 - Telas no layout do Admin B2B: painel chapado ocupando a área de trabalho, grade com
