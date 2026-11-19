@@ -19,6 +19,26 @@ O MySQL guarda apenas o cadastro de servidores da bmAPI (`bmapi.servidores`): o 
 digitado no login informa a URL, a porta e o token (X-API-Key) do cliente. Os dados de
 produção ficam no DBISAM do ERP, acessados só pelo servidor Node.
 
+## Executável para os clientes
+
+```bash
+npm run build:exe
+```
+
+Gera `build/ProducaoLite.exe` (~57 MB, Windows x64), com o Node embutido. Para entregar,
+copie para uma pasta:
+
+```
+ProducaoLite.exe
+dist\            (gerada pelo build, vai junto)
+.env             (senha do MySQL, SESSION_SECRET, PRODUCAO_PORT)
+```
+
+O cliente executa o .exe: ele sobe o servidor e abre o navegador em `localhost`. A janela
+de console precisa ficar aberta enquanto o sistema estiver em uso. Rodando na máquina do
+cliente, um servidor bmAPI cadastrado como `localhost` volta a funcionar — o que não
+acontece na versão hospedada, em que quem chama a bmAPI é o servidor na nuvem.
+
 ## Telas
 
 | Tela | O que faz |

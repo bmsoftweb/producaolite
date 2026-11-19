@@ -1,7 +1,7 @@
 {
   "name": "producaolite",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -9,7 +9,11 @@
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "build:exe": "vite build && esbuild exe.ts --bundle --platform=node --target=node20 --format=cjs --outfile=build/producaolite.cjs && pkg build/producaolite.cjs --targets node20-win-x64 --output build/ProducaoLite.exe"
+  },
+  "pkg": {
+    "assets": []
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
@@ -27,8 +31,9 @@
     "@types/node": "^22.14.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@yao-pkg/pkg": "^6.22.0",
     "autoprefixer": "^10.4.21",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.25.12",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2"
