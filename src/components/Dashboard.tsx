@@ -16,14 +16,13 @@ import {
   ArrowUpRight,
   Loader2,
 } from 'lucide-react';
-import { NavTab } from './Sidebar';
+import { useRouter } from '@/lib/nav';
 
 interface DashboardProps {
   usuario: Usuario;
   empresa: Empresa;
   servidor: ServidorInfo;
   dbStatus: DbConnectionStatus | null;
-  onNavigate: (tab: NavTab) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -31,8 +30,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   empresa,
   servidor,
   dbStatus,
-  onNavigate,
 }) => {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [recentes, setRecentes] = useState<ItemProducao[]>([]);
   const [totalOpsMes, setTotalOpsMes] = useState(0);
@@ -95,7 +94,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           <button
             type="button"
-            onClick={() => onNavigate('producao')}
+            onClick={() => router.push('/producao')}
             className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:from-amber-700 active:to-amber-800 transition-all shadow-md shadow-amber-500/20 flex items-center gap-2 cursor-pointer shrink-0"
           >
             <Plus size={16} />
@@ -183,7 +182,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <button
           type="button"
-          onClick={() => onNavigate('producao')}
+          onClick={() => router.push('/producao')}
           className="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-md transition-all text-left group cursor-pointer"
         >
           <Factory size={20} className="text-amber-500 mb-2 group-hover:scale-110 transition-transform" />
@@ -193,7 +192,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         <button
           type="button"
-          onClick={() => onNavigate('padroes')}
+          onClick={() => router.push('/padroes')}
           className="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-md transition-all text-left group cursor-pointer"
         >
           <ScrollText size={20} className="text-amber-500 mb-2 group-hover:scale-110 transition-transform" />
@@ -203,7 +202,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         <button
           type="button"
-          onClick={() => onNavigate('tecnicos')}
+          onClick={() => router.push('/tecnicos')}
           className="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-md transition-all text-left group cursor-pointer"
         >
           <Users size={20} className="text-amber-500 mb-2 group-hover:scale-110 transition-transform" />
@@ -213,7 +212,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         <button
           type="button"
-          onClick={() => onNavigate('relatorios')}
+          onClick={() => router.push('/relatorios')}
           className="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 hover:border-amber-400 dark:hover:border-amber-500/50 hover:shadow-md transition-all text-left group cursor-pointer"
         >
           <BarChart3 size={20} className="text-amber-500 mb-2 group-hover:scale-110 transition-transform" />
@@ -234,7 +233,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           <button
             type="button"
-            onClick={() => onNavigate('producao')}
+            onClick={() => router.push('/producao')}
             className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 flex items-center gap-1 transition-colors"
           >
             <span>Ver todas as OPs</span>

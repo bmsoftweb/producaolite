@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ArrowDownLeft, ArrowUpRight, Loader2, Printer, Trash2, Users } from 'lucide-react';
 import { ItemProducao, TecnicoOP } from '../types';
 import { fetchProducao, fetchTecnicosOP, excluirProducao } from '../services/api';
 import {
@@ -8,31 +9,15 @@ import {
   formatQtd,
   hojeISO,
 } from '../utils/formatters';
-import { INPUT_CLASS, FIELD_WRAPPER_CLASS } from '../utils/formStyles';
-import {
-  PAINEL, BARRA, BTN_PRIMARIO, BTN_SECUNDARIO, GRADE_AREA, TABELA, TH, TH_INDICADOR, TH_ACOES,
-  TR, TD, TD_INDICADOR, TD_ACOES, INDICADOR, BTN_ACAO, BTN_ACAO_EXCLUIR, TD_VAZIO, MSG_ERRO,
-  MSG_SUCESSO, RODAPE,
-} from '../utils/listaStyles';
+import { useRefreshDaTela } from '@/components/LayoutApp';
+import { ListaCrm } from '@/components/ListaCrm';
+import { INPUT_CLASS } from '@/components/FormCrm';
+import { BotaoAcao } from '@/components/MenuAcoes';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { AvisoErro } from '@/components/AvisoErro';
 import { ProducaoForm } from './ProducaoForm';
 import { Modal } from './Modal';
-import { ConfirmModal } from './ConfirmModal';
 import { DateField } from './DateField';
-import {
-  Plus,
-  Search,
-  RefreshCw,
-  Trash2,
-  Users,
-  Printer,
-  ArrowDownLeft,
-  ArrowUpRight,
-  AlertCircle,
-  Loader2,
-  CheckCircle2,
-  ChevronRight,
-  Inbox,
-} from 'lucide-react';
 
 interface ProducaoViewProps {
   onImprimirOp?: (idProducao: number) => void;
@@ -42,99 +27,72 @@ export const ProducaoView: React.FC<ProducaoViewProps> = ({ onImprimirOp }) => {
   // Controle de visão: lista ou formulário de nova OP
   const [modoFormulario, setModoFormulario] = useState(false);
 
-  // Filtros
+  // Filtros do período
   const [d1, setD1] = useState(hojeISO(-30));
   const [d2, setD2] = useState(hojeISO());
   const [tipoMov, setTipoMov] = useState('');
-  const [busca, setBusca] = useState('');
 
-  // Dados
   const [itens, setItens] = useState<ItemProducao[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const [sucesso, setSucesso] = useState<string | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
+  const [sucesso, setSucesso] = useState('');
 
-  // Modal de Técnicos da OP
-  const [modalTecnicosAberto, setModalTecnicosAberto] = useState(false);
+  // Modal de técnicos da OP
   const [opSelecionada, setOpSelecionada] = useState<number | null>(null);
   const [tecnicosOp, setTecnicosOp] = useState<TecnicoOP[]>([]);
-  const [loadingTecnicos, setLoadingTecnicos] = useState(false);
+  const [carregandoTecnicos, setCarregandoTecnicos] = useState(false);
 
-  // Confirmação de Exclusão
   const [opParaExcluir, setOpParaExcluir] = useState<number | null>(null);
-  const [excluindo, setExcluindo] = useState(false);
 
-  useEffect(() => {
-    // Só recarrega com datas completas (o campo devolve '' enquanto está sendo digitado)
-    if (d1 && d2) carregarMovimentos();
-  }, [d1, d2, tipoMov]);
-
-  const carregarMovimentos = async () => {
+  const carregar = useCallback(async () => {
+    // Só busca com datas completas (o campo devolve '' enquanto está sendo digitado)
+    if (!d1 || !d2) return;
     try {
-      setLoading(true);
-      setErro(null);
-      const res = await fetchProducao({
-        d1,
-        d2,
-        tipo_mov: tipoMov || undefined,
-        busca: busca.trim() || undefined,
-      });
-      setItens(res);
+      setCarregando(true);
+      setItens(await fetchProducao({ d1, d2, tipo_mov: tipoMov || undefined }));
     } catch (err: any) {
       setErro(err.message || 'Erro ao carregar histórico de produção.');
     } finally {
-      setLoading(false);
+      setCarregando(false);
     }
-  };
+  }, [d1, d2, tipoMov]);
 
-  const handleBuscar = (e: React.FormEvent) => {
-    e.preventDefault();
-    carregarMovimentos();
-  };
+  useEffect(() => void carregar(), [carregar]);
+  useRefreshDaTela(carregar);
 
   const abrirTecnicos = async (idProducao: number) => {
     setOpSelecionada(idProducao);
-    setModalTecnicosAberto(true);
+    setTecnicosOp([]);
     try {
-      setLoadingTecnicos(true);
-      const res = await fetchTecnicosOP(idProducao);
-      setTecnicosOp(res);
+      setCarregandoTecnicos(true);
+      setTecnicosOp(await fetchTecnicosOP(idProducao));
     } catch (err: any) {
       setErro(err.message || 'Erro ao consultar equipe da OP.');
     } finally {
-      setLoadingTecnicos(false);
+      setCarregandoTecnicos(false);
     }
   };
 
   const confirmarExclusao = async () => {
-    if (!opParaExcluir) return;
-    try {
-      setExcluindo(true);
-      await excluirProducao(opParaExcluir);
-      setSucesso(`Ordem de Produção #${opParaExcluir} e seus lançamentos no Kardex foram estornados com sucesso!`);
-      setTimeout(() => setSucesso(null), 4000);
-      carregarMovimentos();
-    } catch (err: any) {
-      setErro(err.message || 'Erro ao excluir ordem de produção.');
-    } finally {
-      setExcluindo(false);
-      setOpParaExcluir(null);
-    }
+    const id = opParaExcluir!;
+    await excluirProducao(id);
+    setOpParaExcluir(null);
+    setSucesso(`Ordem de Produção #${id} e seus lançamentos no Kardex foram estornados.`);
+    await carregar();
   };
 
-  // Se o usuário clicou em "Nova"
+  // Se o usuário clicou em "Nova OP"
   if (modoFormulario) {
     return (
       <ProducaoForm
         onVoltar={() => {
           setModoFormulario(false);
-          carregarMovimentos();
+          carregar();
         }}
         onProducaoCriada={(idOp) => {
           setModoFormulario(false);
-          setSucesso(`Ordem de Produção #${idOp} finalizada e gravada com sucesso!`);
-          setTimeout(() => setSucesso(null), 5000);
-          carregarMovimentos();
+          setSucesso(`Ordem de Produção #${idOp} finalizada e gravada.`);
+          carregar();
         }}
       />
     );
@@ -142,271 +100,189 @@ export const ProducaoView: React.FC<ProducaoViewProps> = ({ onImprimirOp }) => {
 
   const totalEntradas = itens.filter((i) => i.tipoMov === 'E').length;
   const totalSaidas = itens.filter((i) => i.tipoMov === 'S').length;
-  const valorTotalMovimentado = itens.reduce((acc, i) => acc + (i.custoTotalTotal || 0), 0);
-
-  const campo = `${INPUT_CLASS} ${FIELD_WRAPPER_CLASS}`;
+  const valorTotal = itens.reduce((acc, i) => acc + (i.custoTotalTotal || 0), 0);
 
   return (
-    <div className={PAINEL}>
-      {/* Barra de ferramentas: filtros + nova OP */}
-      <form onSubmit={handleBuscar} className={BARRA}>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="w-36">
-            <DateField value={d1} onChange={setD1} required className={campo} />
+    <div className="flex-1 flex flex-col min-h-0 min-w-0">
+      <ListaCrm
+        className="flex-1"
+        id="producao"
+        linhas={itens}
+        carregando={carregando}
+        chave={(i) => i.id}
+        onNovo={() => setModoFormulario(true)}
+        rotuloNovo="Nova OP"
+        vazio="Nenhuma movimentação de produção no período selecionado."
+        barraExtra={
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-36">
+              <DateField value={d1} onChange={setD1} required className={INPUT_CLASS} />
+            </div>
+            <span className="text-[11px] text-stone-400">até</span>
+            <div className="w-36">
+              <DateField value={d2} onChange={setD2} required className={INPUT_CLASS} />
+            </div>
+            <select
+              value={tipoMov}
+              onChange={(e) => setTipoMov(e.target.value)}
+              title="Tipo de movimento"
+              className={`${INPUT_CLASS} !w-44 cursor-pointer`}
+            >
+              <option value="">Todos os movimentos</option>
+              <option value="E">Entradas (fabricados)</option>
+              <option value="S">Saídas (insumos)</option>
+            </select>
           </div>
-          <span className="text-[11px] text-stone-400">até</span>
-          <div className="w-36">
-            <DateField value={d2} onChange={setD2} required className={campo} />
-          </div>
-          <select
-            value={tipoMov}
-            onChange={(e) => setTipoMov(e.target.value)}
-            title="Tipo de movimento"
-            className={`${campo} !w-44 cursor-pointer`}
-          >
-            <option value="">Todos os movimentos</option>
-            <option value="E">Entradas (Fabricados)</option>
-            <option value="S">Saídas (Insumos)</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2.5 shrink-0">
-          <div className="relative w-52 sm:w-64 shrink-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-            <input
-              type="text"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Produto, lote ou doc… (Enter)"
-              className={`${campo} pl-9`}
+        }
+        colunas={[
+          {
+            key: 'tipoMov',
+            label: 'Tipo',
+            alinhar: 'centro',
+            largura: 60,
+            render: (it) => {
+              const entrada = it.tipoMov === 'E';
+              return (
+                <span className={`inline-flex items-center gap-0.5 font-bold text-[11px] ${entrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-sky-600 dark:text-sky-400'}`}>
+                  {entrada ? <ArrowDownLeft size={12} /> : <ArrowUpRight size={12} />}
+                  {entrada ? 'E' : 'S'}
+                </span>
+              );
+            },
+          },
+          { key: 'idProducao', label: 'OP', alinhar: 'numero', largura: 70 },
+          { key: 'data', label: 'Data', alinhar: 'centro', largura: 90, render: (it) => formatDateBR(it.data || it.dataOp) },
+          { key: 'descricaoOp', label: 'Documento', largura: 130, render: (it) => it.descricaoOp || '–' },
+          {
+            key: 'descricaoProduto',
+            label: 'Produto / Insumo',
+            largura: 300,
+            render: (it) => (
+              <>
+                <span className="font-semibold text-stone-900 dark:text-stone-100">{it.descricaoProduto}</span>
+                <span className="ml-1.5 text-[11px] font-mono text-stone-400">#{it.idPro}</span>
+              </>
+            ),
+          },
+          { key: 'qtdadeUnControle', label: 'Qtd contr.', alinhar: 'numero', largura: 100, render: (it) => formatQtd(it.qtdadeUnControle) },
+          { key: 'unControle', label: 'UN', alinhar: 'centro', largura: 60, render: (it) => it.unControle || 'UN' },
+          {
+            key: 'qtdadeUnEstoque',
+            label: 'Qtd estoque',
+            alinhar: 'numero',
+            largura: 120,
+            render: (it) => `${formatQtd(it.qtdadeUnEstoque)} ${it.unEstoque || ''}`.trim(),
+          },
+          { key: 'custoTotalUnit', label: 'Custo unit', alinhar: 'numero', largura: 110, render: (it) => formatCurrencyBRL(it.custoTotalUnit) },
+          {
+            key: 'custoTotalTotal',
+            label: 'Custo total',
+            alinhar: 'numero',
+            largura: 130,
+            render: (it) => (
+              <span className={`font-semibold ${it.tipoMov === 'E' ? 'text-emerald-600 dark:text-emerald-400' : 'text-sky-600 dark:text-sky-400'}`}>
+                {formatCurrencyBRL(it.custoTotalTotal)}
+              </span>
+            ),
+          },
+          { key: 'lote', label: 'Lote', largura: 110, render: (it) => it.lote || '–' },
+        ]}
+        rodape={(key) => {
+          if (key === 'descricaoProduto') {
+            return (
+              <span className="text-[11px]">
+                {itens.length} item(ns) • <strong className="text-emerald-600 dark:text-emerald-400">{totalEntradas}</strong> entrada(s) •{' '}
+                <strong className="text-sky-600 dark:text-sky-400">{totalSaidas}</strong> saída(s)
+              </span>
+            );
+          }
+          if (key === 'custoTotalTotal') return <strong className="font-mono">{formatCurrencyBRL(valorTotal)}</strong>;
+          return null;
+        }}
+        acoes={(it) => (
+          <>
+            <BotaoAcao
+              icone={Users}
+              titulo="Técnicos"
+              descricao="Ver os técnicos apontados na OP"
+              onClick={() => abrirTecnicos(it.idProducao)}
             />
-          </div>
-          <button type="submit" disabled={loading} title="Recarregar" className={BTN_SECUNDARIO}>
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button type="button" onClick={() => setModoFormulario(true)} className={BTN_PRIMARIO}>
-            <Plus className="w-3.5 h-3.5" />
-            <span>Nova OP</span>
-          </button>
-        </div>
-      </form>
-
-      {erro && (
-        <div className={MSG_ERRO}>
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{erro}</span>
-        </div>
-      )}
-      {sucesso && (
-        <div className={MSG_SUCESSO}>
-          <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{sucesso}</span>
-        </div>
-      )}
-
-      {/* Grade de Histórico */}
-      <div className={GRADE_AREA}>
-        <table className={TABELA}>
-          <thead className="sticky top-0 z-10">
-            <tr>
-              <th className={TH_INDICADOR} />
-              <th className={`${TH} w-16`}>Tipo</th>
-              <th className={`${TH} w-20`}>OP</th>
-              <th className={`${TH} w-24`}>Data</th>
-              <th className={`${TH} w-32`}>Documento</th>
-              <th className={TH}>Produto / Insumo</th>
-              <th className={`${TH} w-24`}>Qtd Contr.</th>
-              <th className={`${TH} w-14`}>UN</th>
-              <th className={`${TH} w-28`}>Qtd Estoque</th>
-              <th className={`${TH} w-28`}>Custo Unit</th>
-              <th className={`${TH} w-32`}>Custo Total</th>
-              <th className={`${TH} w-28`}>Lote</th>
-              <th className={TH_ACOES}>Ações</th>
-            </tr>
-          </thead>
-          <tbody className={loading && itens.length > 0 ? 'opacity-60' : undefined}>
-            {loading && itens.length === 0 ? (
-              <tr>
-                <td colSpan={13} className={TD_VAZIO}>
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Carregando dados da produção…
-                  </span>
-                </td>
-              </tr>
-            ) : itens.length === 0 ? (
-              <tr>
-                <td colSpan={13} className={TD_VAZIO}>
-                  <div className="flex flex-col items-center gap-2">
-                    <Inbox className="w-8 h-8" />
-                    <span className="text-sm font-medium text-stone-600 dark:text-stone-300">
-                      Nenhuma movimentação de produção no período selecionado
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              itens.map((it) => {
-                const isEntrada = it.tipoMov === 'E';
-                return (
-                  <tr key={it.id} className={TR}>
-                    <td className={TD_INDICADOR}>
-                      <ChevronRight className={INDICADOR} />
-                    </td>
-                    <td className={`${TD} text-center`}>
-                      <span
-                        className={`inline-flex items-center gap-0.5 font-bold text-[11px] ${
-                          isEntrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'
-                        }`}
-                      >
-                        {isEntrada ? <ArrowDownLeft size={12} /> : <ArrowUpRight size={12} />}
-                        {isEntrada ? 'E' : 'S'}
-                      </span>
-                    </td>
-                    <td className={`${TD} text-right font-mono`}>{it.idProducao}</td>
-                    <td className={`${TD} text-center`}>{formatDateBR(it.data || it.dataOp)}</td>
-                    <td className={`${TD} font-mono`}>{it.descricaoOp || '–'}</td>
-                    <td className={TD}>
-                      <span className="font-semibold text-stone-900 dark:text-stone-100">{it.descricaoProduto}</span>
-                      <span className="ml-1.5 text-[11px] font-mono text-stone-400">#{it.idPro}</span>
-                    </td>
-                    <td className={`${TD} text-right font-mono`}>{formatQtd(it.qtdadeUnControle)}</td>
-                    <td className={`${TD} text-center font-mono`}>{it.unControle || 'UN'}</td>
-                    <td className={`${TD} text-right font-mono`}>
-                      {formatQtd(it.qtdadeUnEstoque)} {it.unEstoque}
-                    </td>
-                    <td className={`${TD} text-right font-mono`}>{formatCurrencyBRL(it.custoTotalUnit)}</td>
-                    <td
-                      className={`${TD} text-right font-mono font-semibold ${
-                        isEntrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'
-                      }`}
-                    >
-                      {formatCurrencyBRL(it.custoTotalTotal)}
-                    </td>
-                    <td className={`${TD} font-mono`}>{it.lote || '–'}</td>
-                    <td className={TD_ACOES}>
-                      <div className="inline-flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => abrirTecnicos(it.idProducao)}
-                          title="Ver técnicos apontados na OP"
-                          className={BTN_ACAO}
-                        >
-                          <Users className="w-3.5 h-3.5" />
-                        </button>
-                        {onImprimirOp && (
-                          <button
-                            type="button"
-                            onClick={() => onImprimirOp(it.idProducao)}
-                            title="Imprimir OP"
-                            className={BTN_ACAO}
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setOpParaExcluir(it.idProducao)}
-                          title="Excluir Ordem de Produção (estornar estoque e kardex)"
-                          className={BTN_ACAO_EXCLUIR}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
+            {onImprimirOp && (
+              <BotaoAcao icone={Printer} titulo="Imprimir" descricao="Imprimir a ordem de produção" onClick={() => onImprimirOp(it.idProducao)} />
             )}
-          </tbody>
-        </table>
-      </div>
+            <BotaoAcao
+              icone={Trash2}
+              titulo="Excluir"
+              descricao="Excluir a OP, estornando estoque e kardex"
+              tom="perigo"
+              onClick={() => setOpParaExcluir(it.idProducao)}
+            />
+          </>
+        )}
+      />
 
-      {/* Totais ao pé */}
-      <div className={RODAPE}>
-        <span>
-          Itens: <strong className="text-stone-800 dark:text-stone-200">{itens.length}</strong>
-        </span>
-        <span>
-          Entradas: <strong className="text-emerald-600 dark:text-emerald-400">{totalEntradas}</strong>
-        </span>
-        <span>
-          Saídas / Insumos: <strong className="text-blue-600 dark:text-blue-400">{totalSaidas}</strong>
-        </span>
-        <span className="ml-auto">
-          Valor total:{' '}
-          <strong className="font-mono text-stone-800 dark:text-stone-200">{formatCurrencyBRL(valorTotalMovimentado)}</strong>
-        </span>
-      </div>
-
-      {/* Modal de Técnicos da OP */}
-      {modalTecnicosAberto && (
+      {/* Técnicos apontados na OP */}
+      {opSelecionada !== null && (
         <Modal
-          isOpen={modalTecnicosAberto}
-          onClose={() => setModalTecnicosAberto(false)}
-          title={`Equipe Técnica da OP #${opSelecionada}`}
+          isOpen
+          onClose={() => setOpSelecionada(null)}
+          title={`Equipe técnica da OP #${opSelecionada}`}
           subtitle="Horas trabalhadas e valores de mão de obra registrados"
           size="lg"
         >
-          {loadingTecnicos ? (
+          {carregandoTecnicos ? (
             <div className="py-8 flex items-center justify-center text-stone-400 gap-2 text-xs">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>Consultando técnicos da OP…</span>
             </div>
-          ) : tecnicosOp.length === 0 ? (
-            <div className="py-8 text-center text-xs text-stone-400">
-              Nenhum apontamento de técnico registrado para esta ordem de produção.
-            </div>
           ) : (
-            <div className="overflow-x-auto border border-stone-200 dark:border-stone-800">
-              <table className={TABELA}>
-                <thead>
-                  <tr>
-                    <th className={TH}>Técnico</th>
-                    <th className={TH}>Data</th>
-                    <th className={TH}>Horário</th>
-                    <th className={TH}>Horas</th>
-                    <th className={TH}>Valor/Hora</th>
-                    <th className={TH}>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tecnicosOp.map((tc) => (
-                    <tr key={tc.id} className={TR}>
-                      <td className={`${TD} font-medium`}>{tc.nomeTecnico}</td>
-                      <td className={`${TD} text-center`}>{formatDateBR(tc.data)}</td>
-                      <td className={`${TD} text-center font-mono`}>
-                        {tc.horaIni} às {tc.horaFim}
-                      </td>
-                      <td className={`${TD} text-right font-mono`}>{formatDecimal(tc.horasTotais)} h</td>
-                      <td className={`${TD} text-right font-mono`}>{formatCurrencyBRL(tc.valorHora)}</td>
-                      <td className={`${TD} text-right font-mono font-semibold`}>{formatCurrencyBRL(tc.valorTotal)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ListaCrm
+              id="producao-tecnicos"
+              className="max-h-[50vh]"
+              linhas={tecnicosOp}
+              chave={(tc) => tc.id}
+              buscar={false}
+              paginar={false}
+              vazio="Nenhum apontamento de técnico nesta ordem de produção."
+              colunas={[
+                { key: 'nomeTecnico', label: 'Técnico', largura: 220 },
+                { key: 'data', label: 'Data', alinhar: 'centro', largura: 90, render: (tc) => formatDateBR(tc.data) },
+                { key: 'horario', label: 'Horário', alinhar: 'centro', largura: 120, render: (tc) => `${tc.horaIni} às ${tc.horaFim}` },
+                { key: 'horasTotais', label: 'Horas', alinhar: 'numero', largura: 90, render: (tc) => `${formatDecimal(tc.horasTotais)} h` },
+                { key: 'valorHora', label: 'Valor/hora', alinhar: 'numero', largura: 110, render: (tc) => formatCurrencyBRL(tc.valorHora) },
+                {
+                  key: 'valorTotal',
+                  label: 'Total',
+                  alinhar: 'numero',
+                  largura: 120,
+                  render: (tc) => <strong className="font-mono">{formatCurrencyBRL(tc.valorTotal)}</strong>,
+                },
+              ]}
+            />
           )}
         </Modal>
       )}
 
-      {opParaExcluir && (
-        <ConfirmModal
+      {opParaExcluir !== null && (
+        <ConfirmDialog
           titulo={`Excluir OP #${opParaExcluir}`}
           mensagem={
             <>
               Você tem certeza que deseja excluir esta Ordem de Produção?
               <strong className="text-rose-600 dark:text-rose-400 mt-2 block">
-                Atenção: os produtos acabados e insumos serão estornados do Kardex (CARDEX), dos saldos de lotes
-                (PRODUTOSLOTES) e do estoque da empresa.
+                Os produtos acabados e insumos serão estornados do Kardex (CARDEX), dos saldos de lotes (PRODUTOSLOTES) e do
+                estoque da empresa.
               </strong>
             </>
           }
-          textoConfirmar="Excluir e Estornar"
-          processando={excluindo}
+          confirmar="Excluir e estornar"
           onConfirmar={confirmarExclusao}
           onCancelar={() => setOpParaExcluir(null)}
         />
       )}
+
+      {erro && <AvisoErro mensagem={erro} onFechar={() => setErro('')} />}
+      {sucesso && <AvisoErro mensagem={sucesso} tom="sucesso" onFechar={() => setSucesso('')} />}
     </div>
   );
 };

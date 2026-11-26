@@ -4,8 +4,10 @@ Lançamento de ordens de produção sobre o ERP em DBISAM, pela **bmAPI**: produ
 (entradas), matérias-primas (saídas), lotes, mão de obra e custos, com baixa de estoque e
 kardex. Conversão do módulo de produção do Delphi.
 
-Mesmo layout e stack do **Admin B2B** (`b2bweb/admin`): Express + Vite (middleware) +
-React 19 + Tailwind 4 + mysql2, fonte Jost, tema claro/escuro, sidebar + header.
+Mesmo layout e stack do **erp-compras**: Express + Vite (middleware) + React 19 +
+React Router + Tailwind 4 + mysql2, fonte Jost, tema claro/escuro, casca com sidebar,
+cabeçalho da tela e barra de status. O design system (`ListaCrm`, `FormCrm`, `MenuAcoes`,
+`ConfirmDialog`, `AvisoErro`, `Dica`) veio de lá, com o âmbar do ProduçãoLite no lugar do azul.
 
 ## Rodando
 
@@ -15,8 +17,8 @@ cp .env.example .env      # preencha MYSQL_USER / MYSQL_PASSWORD
 npm run dev               # http://localhost:3004
 ```
 
-O MySQL guarda apenas o cadastro de servidores da bmAPI (`bmapi.servidores`): o número
-digitado no login informa a URL, a porta e o token (X-API-Key) do cliente. Os dados de
+O MySQL guarda apenas o cadastro de servidores da bmAPI (`bmapi.servidores`): o token
+(X-API-Key) digitado no login encontra a linha do cliente, com a URL e a porta. Os dados de
 produção ficam no DBISAM do ERP, acessados só pelo servidor Node.
 
 ## Executável para os clientes
@@ -59,6 +61,23 @@ Do ERP: `PRODUTOSPRINCIPAL`, `PRODUTOSREFERENCIA`, `PRODUTOSREFEMPRESA`, `PRODUT
 `PROCUSTOSEMP`, `PROLOTES`, `PROLOTESCARDEX`, `CCUSTOS`, `ORCAMENTOM`/`ORCAMENTOP`, `OSM`/`OSP`.
 
 ## Histórico
+
+### 1.0.3
+- Layout e stack do **erp-compras** em todo o app: `globals.css` (campos com moldura e
+  barra à esquerda, select customizado, tabelas `planilha`), `ListaCrm` nas listas,
+  `FormCrm`/`TelaCheia` nos formulários, `MenuAcoes`, `ConfirmDialog`, `AvisoErro` e
+  `Dica`. O destaque continua âmbar; o azul ficou só no fundo dos campos e na opção
+  escolhida do select, como manda o padrão.
+- Casca com React Router: `LayoutApp` (sidebar recolhível, cabeçalho da tela e barra de
+  status com versão, servidor, filial e usuário) e uma rota por tela.
+- Login pelo **token (X-API-Key)** do servidor, não mais pelo número: a busca em
+  `bmapi.servidores` é pelo token e a rota `GET /api/servidores/:numero` saiu, para
+  ninguém varrer números e ver a identificação de outros clientes. O token não é guardado
+  no navegador. Tela refeita no modelo do erp-compras.
+- Correção: ao recarregar a página, as telas consultavam a API antes de o token de sessão
+  ser definido, tomavam 401 e caíam para o login.
+- Preferências das listas (larguras, ordem, grade, modo das Ações) ainda valem só na aba;
+  o destino é `WEB_USUARIOS.CONFIG_LISTAS`.
 
 ### 1.0.1
 - PWA: manifesto, ícones (normal e maskable) e service worker próprios, sem dependência

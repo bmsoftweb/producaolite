@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { INPUT_CLASS } from './FormCrm';
 
 interface DateFieldProps {
   id?: string;
@@ -65,7 +66,7 @@ export const DateField: React.FC<DateFieldProps> = ({
   onChange,
   required,
   withTime,
-  className = '',
+  className = INPUT_CLASS,
   placeholder = 'dd/mm/aaaa',
 }) => {
   const isoData = (value || '').slice(0, 10);
@@ -139,12 +140,21 @@ export const DateField: React.FC<DateFieldProps> = ({
     const aoTeclar = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setAberto(false);
     };
+    // Saiu do campo pelo teclado (Tab) ou o foco foi para outro campo: fecha também
+    // (ir para a hora, ao lado, também fecha: só o campo da data mantém o calendário)
+    const aoFocar = (e: FocusEvent) => {
+      const alvo = e.target as Node;
+      if (popoverRef.current?.contains(alvo) || ancoraRef.current?.firstElementChild?.contains(alvo)) return;
+      setAberto(false);
+    };
 
     document.addEventListener('mousedown', aoClicar);
     document.addEventListener('keydown', aoTeclar);
+    document.addEventListener('focusin', aoFocar);
     return () => {
       document.removeEventListener('mousedown', aoClicar);
       document.removeEventListener('keydown', aoTeclar);
+      document.removeEventListener('focusin', aoFocar);
     };
   }, [aberto]);
 
@@ -353,7 +363,8 @@ export const DateField: React.FC<DateFieldProps> = ({
           type="time"
           value={hora}
           onChange={(e) => emitir(isoData || hojeIso, e.target.value)}
-          className={`${className} w-24 font-mono shrink-0`}
+          // Sem o w-full do formulário: com ele a hora tomava a linha e a data (com o ícone do calendário) sumia
+          className={`${className.replace(/\bw-full\b/g, '')} w-28 font-mono shrink-0`}
         />
       )}
 

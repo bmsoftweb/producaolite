@@ -2,7 +2,6 @@ import { Empresa, ServidorInfo, Usuario } from '../types';
 
 const SESSAO = 'producaolite_sessao';
 const LEMBRETE = 'producaolite_lembrar_email';
-const SERVIDOR = 'producaolite_ultimo_servidor';
 
 export interface SessaoSalva {
   token: string;
@@ -56,10 +55,4 @@ export function salvarLembrete(email: string) {
 }
 export function limparLembrete() {
   seguro(() => localStorage.removeItem(LEMBRETE), undefined);
-}
-export function lerUltimoServidor(): string {
-  return seguro(() => localStorage.getItem(SERVIDOR) || '', '');
-}
-export function salvarUltimoServidor(numero: number) {
-  seguro(() => localStorage.setItem(SERVIDOR, String(numero)), undefined);
 }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { salvarPadrao } from '../services/api';
 import { FormEntrada, FormSaida, FormTecnico } from '../types';
-import { INPUT_CLASS, LABEL_CLASS, FIELD_WRAPPER_CLASS } from '../utils/formStyles';
+import { INPUT_CLASS, LABEL_CLASS } from '@/components/FormCrm';
 import { Save, Loader2, AlertCircle } from 'lucide-react';
 
 interface SalvarPadraoModalProps {
@@ -96,7 +96,7 @@ export const SalvarPadraoModal: React.FC<SalvarPadraoModalProps> = ({
 
         <div>
           <label className={LABEL_CLASS}>Código de Referência (opcional)</label>
-          <div className={FIELD_WRAPPER_CLASS}>
+          <div >
             <input
               type="text"
               value={codigo}
@@ -109,7 +109,7 @@ export const SalvarPadraoModal: React.FC<SalvarPadraoModalProps> = ({
 
         <div>
           <label className={LABEL_CLASS}>Nome / Descrição da Receita</label>
-          <div className={FIELD_WRAPPER_CLASS}>
+          <div >
             <input
               type="text"
               required

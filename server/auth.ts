@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { Router, Request, Response, NextFunction } from 'express';
 import { config } from './config.js';
 import { consultarUm, executar, comServidor, servidorAtual, verificarBmapi, BmapiError } from './bmapi.js';
-import { buscarServidor, Servidor } from './servidores.js';
+import { buscarServidor, buscarServidorPorToken, Servidor } from './servidores.js';
 
 /**
  * Autenticação do ProducaoLite.
@@ -160,12 +160,22 @@ async function carregarUsuario(id: number): Promise<UsuarioSessao | null> {
   return usuario;
 }
 
-function numeroServidor(valor: unknown): number {
-  const n = Number(String(valor ?? '').trim());
-  if (!Number.isInteger(n) || n < 1 || n > 999) {
-    throw new BmapiError('Informe o número do servidor (1 a 999).');
+/**
+ * Servidor do login, pelo token (X-API-Key) que o cliente recebeu. A mensagem de erro é a
+ * mesma para token vazio, inexistente ou cadastro incompleto: nada do cadastro vaza daqui.
+ */
+async function resolverServidorPorToken(valor: unknown): Promise<Servidor> {
+  const chave = String(valor ?? '').trim();
+  let servidor: Servidor | null = null;
+  if (chave) {
+    try {
+      servidor = await buscarServidorPorToken(chave);
+    } catch (err: any) {
+      throw new BmapiError(`Não foi possível consultar o cadastro de servidores (${err.code || err.message}).`, 503);
+    }
   }
-  return n;
+  if (!servidor) throw new BmapiError('Token inválido. Confira o token do seu servidor.', 401);
+  return servidor;
 }
 
 async function resolverServidor(numero: number): Promise<Servidor> {
@@ -251,9 +261,10 @@ async function dadosEmpresa() {
 export function createAuthRouter() {
   const router = Router();
 
-  router.get('/servidores/:numero', async (req: Request, res: Response) => {
+  // POST (e não GET com o token na URL): token é credencial, não vai em caminho nem query
+  router.post('/servidores/verificar', async (req: Request, res: Response) => {
     try {
-      const servidor = await resolverServidor(numeroServidor(req.params.numero));
+      const servidor = await resolverServidorPorToken(req.body?.token);
       const status = await comServidor(servidor, () => verificarBmapi());
       res.json({ ...dadosPublicosServidor(servidor), connected: status.connected, error: status.error });
     } catch (err: any) {
@@ -263,11 +274,10 @@ export function createAuthRouter() {
 
   router.post('/auth/login', async (req: Request, res: Response) => {
     try {
-      const numero = numeroServidor(req.body?.servidor ?? 1);
       const email = String(req.body?.email || '').trim();
       const senha = String(req.body?.senha ?? '');
 
-      const servidor = await resolverServidor(numero);
+      const servidor = await resolverServidorPorToken(req.body?.token);
 
       await comServidor(servidor, async () => {
         let usuario: UsuarioSessao | null = null;

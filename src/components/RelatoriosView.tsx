@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ArrowDownLeft, ArrowUpRight, Printer, Users } from 'lucide-react';
 import { Empresa } from '../types';
 import { fetchRelatorio } from '../services/api';
 import {
@@ -8,24 +9,12 @@ import {
   formatQtd,
   hojeISO,
 } from '../utils/formatters';
-import { INPUT_CLASS, FIELD_WRAPPER_CLASS } from '../utils/formStyles';
-import {
-  PAINEL, BARRA, BTN_PRIMARIO, BTN_SECUNDARIO, GRADE_AREA, TABELA, TH, TH_INDICADOR, TR, TD,
-  TD_INDICADOR, INDICADOR, TD_VAZIO, MSG_ERRO, RODAPE,
-} from '../utils/listaStyles';
+import { useRefreshDaTela } from '@/components/LayoutApp';
+import { ListaCrm } from '@/components/ListaCrm';
+import { INPUT_CLASS } from '@/components/FormCrm';
+import { AvisoErro } from '@/components/AvisoErro';
 import { ImpressaoProducao } from './ImpressaoProducao';
 import { DateField } from './DateField';
-import {
-  Printer,
-  Loader2,
-  AlertCircle,
-  ArrowDownLeft,
-  ArrowUpRight,
-  Users,
-  RefreshCw,
-  ChevronRight,
-  Inbox,
-} from 'lucide-react';
 
 interface RelatoriosViewProps {
   empresa: Empresa;
@@ -34,119 +23,50 @@ interface RelatoriosViewProps {
 export const RelatoriosView: React.FC<RelatoriosViewProps> = ({ empresa }) => {
   const [d1, setD1] = useState(hojeISO(-30));
   const [d2, setD2] = useState(hojeISO());
-  const [dados, setDados] = useState<{ producao: any[]; horas: any[] }>({
-    producao: [],
-    horas: [],
-  });
-  const [loading, setLoading] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [dados, setDados] = useState<{ producao: any[]; horas: any[] }>({ producao: [], horas: [] });
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
   const [modoImpressao, setModoImpressao] = useState(false);
 
-  useEffect(() => {
-    carregarRelatorio();
-  }, []);
-
-  const carregarRelatorio = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const carregar = useCallback(async () => {
+    if (!d1 || !d2) return;
     try {
-      setLoading(true);
-      setErro(null);
-      const res = await fetchRelatorio({ d1, d2 });
-      setDados(res);
+      setCarregando(true);
+      setDados(await fetchRelatorio({ d1, d2 }));
     } catch (err: any) {
       setErro(err.message || 'Erro ao carregar relatório.');
     } finally {
-      setLoading(false);
+      setCarregando(false);
     }
-  };
+  }, [d1, d2]);
+
+  useEffect(() => void carregar(), [carregar]);
+  useRefreshDaTela(carregar);
 
   if (modoImpressao) {
     // A prévia de impressão rola dentro da área de trabalho; na impressão ocupa a página
     return (
       <div className="flex-1 overflow-y-auto min-h-0 print:overflow-visible">
-        <ImpressaoProducao
-          empresa={empresa}
-          d1={d1}
-          d2={d2}
-          dados={dados}
-          onVoltar={() => setModoImpressao(false)}
-        />
+        <ImpressaoProducao empresa={empresa} d1={d1} d2={d2} dados={dados} onVoltar={() => setModoImpressao(false)} />
       </div>
     );
   }
 
-  const totalCustoEntradas = dados.producao
-    .filter((p) => p.tipoMov === 'E')
-    .reduce((acc, p) => acc + (p.custoTotalTotal || 0), 0);
-
-  const totalCustoSaidas = dados.producao
-    .filter((p) => p.tipoMov === 'S')
-    .reduce((acc, p) => acc + (p.custoTotalTotal || 0), 0);
-
-  const totalHorasTecnicos = dados.horas.reduce((acc, h) => acc + (h.horasTotais || 0), 0);
-  const totalValorTecnicos = dados.horas.reduce((acc, h) => acc + (h.valorTotal || 0), 0);
-
-  const campo = `${INPUT_CLASS} ${FIELD_WRAPPER_CLASS}`;
+  const custoEntradas = dados.producao.filter((p) => p.tipoMov === 'E').reduce((acc, p) => acc + (p.custoTotalTotal || 0), 0);
+  const custoSaidas = dados.producao.filter((p) => p.tipoMov === 'S').reduce((acc, p) => acc + (p.custoTotalTotal || 0), 0);
+  const horasTecnicos = dados.horas.reduce((acc, h) => acc + (h.horasTotais || 0), 0);
+  const valorTecnicos = dados.horas.reduce((acc, h) => acc + (h.valorTotal || 0), 0);
 
   const resumo = [
-    {
-      titulo: 'Total Fabricado (Entradas)',
-      icone: <ArrowDownLeft size={14} className="text-emerald-500" />,
-      valor: formatCurrencyBRL(totalCustoEntradas),
-      cor: 'text-emerald-600 dark:text-emerald-400',
-    },
-    {
-      titulo: 'Total Insumos (Saídas)',
-      icone: <ArrowUpRight size={14} className="text-blue-500" />,
-      valor: formatCurrencyBRL(totalCustoSaidas),
-      cor: 'text-blue-600 dark:text-blue-400',
-    },
-    {
-      titulo: `Total Mão de Obra (${formatDecimal(totalHorasTecnicos)} h)`,
-      icone: <Users size={14} className="text-purple-500" />,
-      valor: formatCurrencyBRL(totalValorTecnicos),
-      cor: 'text-purple-600 dark:text-purple-400',
-    },
+    { titulo: 'Total fabricado (entradas)', icone: <ArrowDownLeft size={14} className="text-emerald-500" />, valor: formatCurrencyBRL(custoEntradas), cor: 'text-emerald-600 dark:text-emerald-400' },
+    { titulo: 'Total insumos (saídas)', icone: <ArrowUpRight size={14} className="text-sky-500" />, valor: formatCurrencyBRL(custoSaidas), cor: 'text-sky-600 dark:text-sky-400' },
+    { titulo: `Total mão de obra (${formatDecimal(horasTecnicos)} h)`, icone: <Users size={14} className="text-purple-500" />, valor: formatCurrencyBRL(valorTecnicos), cor: 'text-purple-600 dark:text-purple-400' },
   ];
 
   return (
-    <div className={PAINEL}>
-      {/* Barra de ferramentas: período + impressão */}
-      <form onSubmit={carregarRelatorio} className={BARRA}>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="w-36">
-            <DateField value={d1} onChange={setD1} required className={campo} />
-          </div>
-          <span className="text-[11px] text-stone-400">até</span>
-          <div className="w-36">
-            <DateField value={d2} onChange={setD2} required className={campo} />
-          </div>
-          <button type="submit" disabled={loading || !d1 || !d2} className={BTN_SECUNDARIO}>
-            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-            <span>Atualizar</span>
-          </button>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setModoImpressao(true)}
-          disabled={dados.producao.length === 0 && dados.horas.length === 0}
-          className={BTN_PRIMARIO}
-        >
-          <Printer className="w-3.5 h-3.5" />
-          <span>Imprimir / PDF</span>
-        </button>
-      </form>
-
-      {erro && (
-        <div className={MSG_ERRO}>
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{erro}</span>
-        </div>
-      )}
-
+    <div className="flex-1 flex flex-col min-h-0 min-w-0">
       {/* Resumo: faixa chapada com divisórias */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 border-b border-stone-200 dark:border-stone-800 shrink-0 divide-y sm:divide-y-0 sm:divide-x divide-stone-200 dark:divide-stone-800">
+      <div className="grid grid-cols-1 sm:grid-cols-3 border-b border-stone-200 dark:border-stone-800 shrink-0 divide-y sm:divide-y-0 sm:divide-x divide-stone-200 dark:divide-stone-800 bg-white dark:bg-stone-900">
         {resumo.map((r) => (
           <div key={r.titulo} className="px-4 py-3">
             <span className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -158,90 +78,82 @@ export const RelatoriosView: React.FC<RelatoriosViewProps> = ({ empresa }) => {
         ))}
       </div>
 
-      {/* Movimentações do período */}
-      <div className={GRADE_AREA}>
-        <table className={TABELA}>
-          <thead className="sticky top-0 z-10">
-            <tr>
-              <th className={TH_INDICADOR} />
-              <th className={`${TH} w-16`}>Tipo</th>
-              <th className={`${TH} w-20`}>OP</th>
-              <th className={`${TH} w-24`}>Data</th>
-              <th className={TH}>Produto / Insumo</th>
-              <th className={`${TH} w-24`}>Qtd</th>
-              <th className={`${TH} w-14`}>UN</th>
-              <th className={`${TH} w-28`}>Custo Unit</th>
-              <th className={`${TH} w-32`}>Custo Total</th>
-            </tr>
-          </thead>
-          <tbody className={loading && dados.producao.length > 0 ? 'opacity-60' : undefined}>
-            {loading && dados.producao.length === 0 ? (
-              <tr>
-                <td colSpan={9} className={TD_VAZIO}>
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Carregando relatório…
-                  </span>
-                </td>
-              </tr>
-            ) : dados.producao.length === 0 ? (
-              <tr>
-                <td colSpan={9} className={TD_VAZIO}>
-                  <div className="flex flex-col items-center gap-2">
-                    <Inbox className="w-8 h-8" />
-                    <span className="text-sm font-medium text-stone-600 dark:text-stone-300">
-                      Nenhum lançamento no período
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              dados.producao.map((p, idx) => {
-                const isEntrada = p.tipoMov === 'E';
-                return (
-                  <tr key={idx} className={TR}>
-                    <td className={TD_INDICADOR}>
-                      <ChevronRight className={INDICADOR} />
-                    </td>
-                    <td className={`${TD} text-center`}>
-                      <span
-                        className={`inline-flex items-center gap-0.5 font-bold text-[11px] ${
-                          isEntrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'
-                        }`}
-                      >
-                        {isEntrada ? <ArrowDownLeft size={12} /> : <ArrowUpRight size={12} />}
-                        {isEntrada ? 'E' : 'S'}
-                      </span>
-                    </td>
-                    <td className={`${TD} text-right font-mono`}>{p.idProducao}</td>
-                    <td className={`${TD} text-center`}>{formatDateBR(p.data || p.dataOp)}</td>
-                    <td className={`${TD} font-medium`}>{p.descricaoProduto}</td>
-                    <td className={`${TD} text-right font-mono`}>{formatQtd(p.qtdadeUnControle)}</td>
-                    <td className={`${TD} text-center font-mono`}>{p.unControle || 'UN'}</td>
-                    <td className={`${TD} text-right font-mono`}>{formatCurrencyBRL(p.custoTotalUnit)}</td>
-                    <td
-                      className={`${TD} text-right font-mono font-semibold ${
-                        isEntrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'
-                      }`}
-                    >
-                      {formatCurrencyBRL(p.custoTotalTotal)}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+      <ListaCrm
+        className="flex-1"
+        id="relatorios"
+        linhas={dados.producao}
+        carregando={carregando}
+        chave={(p) => p.id ?? `${p.idProducao}-${p.tipoMov}-${p.idPro}-${p.data || p.dataOp}`}
+        vazio="Nenhum lançamento no período."
+        barraExtra={
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-36">
+              <DateField value={d1} onChange={setD1} required className={INPUT_CLASS} />
+            </div>
+            <span className="text-[11px] text-stone-400">até</span>
+            <div className="w-36">
+              <DateField value={d2} onChange={setD2} required className={INPUT_CLASS} />
+            </div>
+            <button
+              type="button"
+              onClick={() => setModoImpressao(true)}
+              disabled={dados.producao.length === 0 && dados.horas.length === 0}
+              title="Imprimir o demonstrativo do período"
+              className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer shrink-0 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Imprimir / PDF</span>
+            </button>
+          </div>
+        }
+        colunas={[
+          {
+            key: 'tipoMov',
+            label: 'Tipo',
+            alinhar: 'centro',
+            largura: 60,
+            render: (p) => {
+              const entrada = p.tipoMov === 'E';
+              return (
+                <span className={`inline-flex items-center gap-0.5 font-bold text-[11px] ${entrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-sky-600 dark:text-sky-400'}`}>
+                  {entrada ? <ArrowDownLeft size={12} /> : <ArrowUpRight size={12} />}
+                  {entrada ? 'E' : 'S'}
+                </span>
+              );
+            },
+          },
+          { key: 'idProducao', label: 'OP', alinhar: 'numero', largura: 70 },
+          { key: 'data', label: 'Data', alinhar: 'centro', largura: 90, render: (p) => formatDateBR(p.data || p.dataOp) },
+          { key: 'descricaoProduto', label: 'Produto / Insumo', largura: 320 },
+          { key: 'qtdadeUnControle', label: 'Qtd', alinhar: 'numero', largura: 100, render: (p) => formatQtd(p.qtdadeUnControle) },
+          { key: 'unControle', label: 'UN', alinhar: 'centro', largura: 60, render: (p) => p.unControle || 'UN' },
+          { key: 'custoTotalUnit', label: 'Custo unit', alinhar: 'numero', largura: 110, render: (p) => formatCurrencyBRL(p.custoTotalUnit) },
+          {
+            key: 'custoTotalTotal',
+            label: 'Custo total',
+            alinhar: 'numero',
+            largura: 130,
+            render: (p) => (
+              <span className={`font-semibold ${p.tipoMov === 'E' ? 'text-emerald-600 dark:text-emerald-400' : 'text-sky-600 dark:text-sky-400'}`}>
+                {formatCurrencyBRL(p.custoTotalTotal)}
+              </span>
+            ),
+          },
+        ]}
+        rodape={(key) => {
+          if (key === 'descricaoProduto') {
+            return (
+              <span className="text-[11px]">
+                {dados.producao.length} movimentação(ões) • {dados.horas.length} apontamento(s) de técnico
+              </span>
+            );
+          }
+          if (key === 'custoTotalTotal') return <strong className="font-mono">{formatCurrencyBRL(custoEntradas + custoSaidas)}</strong>;
+          return null;
+        }}
+      />
 
-      <div className={RODAPE}>
-        <span>
-          Movimentações do período:{' '}
-          <strong className="text-stone-800 dark:text-stone-200">{dados.producao.length}</strong>
-        </span>
-        <span>
-          Apontamentos de técnicos: <strong className="text-stone-800 dark:text-stone-200">{dados.horas.length}</strong>
-        </span>
-      </div>
+      {erro && <AvisoErro mensagem={erro} onFechar={() => setErro('')} />}
     </div>
   );
 };

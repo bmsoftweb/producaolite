@@ -3,7 +3,7 @@ import { Modal } from './Modal';
 import { Lote } from '../types';
 import { fetchLotes, criarLote } from '../services/api';
 import { formatDateBR, formatDecimal, hojeISO } from '../utils/formatters';
-import { INPUT_CLASS, LABEL_CLASS, FIELD_WRAPPER_CLASS } from '../utils/formStyles';
+import { INPUT_CLASS, LABEL_CLASS } from '@/components/FormCrm';
 import { Tag, Plus, Check, Loader2, AlertCircle, Calendar } from 'lucide-react';
 
 interface LoteModalProps {
@@ -115,7 +115,7 @@ export const LoteModal: React.FC<LoteModalProps> = ({
           <form onSubmit={handleCriarLote} className="space-y-3">
             <div>
               <label className={LABEL_CLASS}>Identificação do Lote</label>
-              <div className={FIELD_WRAPPER_CLASS}>
+              <div >
                 <input
                   type="text"
                   required
@@ -131,7 +131,7 @@ export const LoteModal: React.FC<LoteModalProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={LABEL_CLASS}>Data de Fabricação</label>
-                <div className={FIELD_WRAPPER_CLASS}>
+                <div >
                   <input
                     type="date"
                     value={fabricacao}
@@ -143,7 +143,7 @@ export const LoteModal: React.FC<LoteModalProps> = ({
 
               <div>
                 <label className={LABEL_CLASS}>Data de Validade</label>
-                <div className={FIELD_WRAPPER_CLASS}>
+                <div >
                   <input
                     type="date"
                     value={validade}

@@ -5,7 +5,7 @@ import {
   paraExibicao,
   aplicarDigitacao,
   aplicarColagem,
-} from '../utils/numeroBancario';
+} from '@/lib/numeroBancario';
 
 interface NumberFieldProps {
   id?: string;
@@ -66,6 +66,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({
       inputMode={allowNegative ? 'text' : 'numeric'}
       autoComplete="off"
       value={paraExibicao(atual, scale)}
+      onFocus={(e) => e.target.select()}
       onChange={(e) => {
         moverCursorParaFim.current = true;
         onChange(paraCanonico(aplicarDigitacao(e.target.value, atual, scale, allowNegative), scale));

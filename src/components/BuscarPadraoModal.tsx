@@ -3,7 +3,7 @@ import { Modal } from './Modal';
 import { PadraoProd } from '../types';
 import { fetchPadroes, fetchPadraoItens } from '../services/api';
 import { ScrollText, Search, Loader2, Check, AlertCircle, ArrowDownLeft, ArrowUpRight, Users } from 'lucide-react';
-import { INPUT_CLASS, FIELD_WRAPPER_CLASS } from '../utils/formStyles';
+import { INPUT_CLASS } from '@/components/FormCrm';
 import { formatDecimal } from '../utils/formatters';
 
 interface BuscarPadraoModalProps {
@@ -88,7 +88,7 @@ export const BuscarPadraoModal: React.FC<BuscarPadraoModalProps> = ({
         {/* Coluna Esquerda: Lista de Padrões */}
         <div className="md:col-span-5 space-y-2 border-b md:border-b-0 md:border-r border-stone-200 dark:border-stone-800 pb-4 md:pb-0 md:pr-4">
           <div className="relative">
-            <div className={FIELD_WRAPPER_CLASS}>
+            <div >
               <input
                 type="text"
                 placeholder="Buscar por código ou nome..."

@@ -26,11 +26,11 @@ import {
   calcHoras,
   toInputDate,
 } from '../utils/formatters';
-import { INPUT_CLASS, LABEL_CLASS, FIELD_WRAPPER_CLASS } from '../utils/formStyles';
-import {
-  PAINEL, BARRA, BTN_PRIMARIO, BTN_SECUNDARIO, TABELA, TH, TR, TD, BTN_ACAO_EXCLUIR, MSG_ERRO, MSG_SUCESSO,
-} from '../utils/listaStyles';
-import { ConfirmModal } from './ConfirmModal';
+import { INPUT_CLASS, LABEL_CLASS } from '@/components/FormCrm';
+import { PAINEL, BARRA, BTN_PRIMARIO, BTN_SECUNDARIO, TABELA, TH, TR, TD } from '../utils/planilha';
+import { BotaoAcao } from '@/components/MenuAcoes';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { AvisoErro } from '@/components/AvisoErro';
 import { DateField } from './DateField';
 import { NumberField } from './NumberField';
 import { LoteModal } from './LoteModal';
@@ -54,8 +54,6 @@ import {
   BookOpen,
   FileSpreadsheet,
   Wrench,
-  CheckCircle2,
-  AlertCircle,
   Loader2,
   Save,
   DollarSign,
@@ -641,7 +639,7 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
     setRemovendo(null);
   };
 
-  const campo = `${INPUT_CLASS} ${FIELD_WRAPPER_CLASS}`;
+  const campo = `${INPUT_CLASS}`;
   /** Célula com campo editável: menos respiro vertical que a célula de texto */
   const TD_CAMPO = `${TD} !py-1`;
 
@@ -796,18 +794,6 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
 
       {/* Corpo rolável */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        {erro && (
-          <div className={MSG_ERRO}>
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{erro}</span>
-          </div>
-        )}
-        {sucesso && (
-          <div className={MSG_SUCESSO}>
-            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{sucesso}</span>
-          </div>
-        )}
 
         {/* Cabeçalho da OP */}
         <div className="px-4 py-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -918,14 +904,13 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
                         {formatCurrencyBRL(item.custoTotalTotal)}
                       </td>
                       <td className={`${TD} text-center`}>
-                        <button
-                          type="button"
+                        <BotaoAcao
+                          icone={Trash2}
+                          titulo="Remover"
+                          descricao="Remover produto da entrada"
+                          tom="perigo"
                           onClick={() => setRemovendo({ tipo: 'E', idx, nome: item.descricao })}
-                          className={BTN_ACAO_EXCLUIR}
-                          title="Remover produto da entrada"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        />
                       </td>
                     </tr>
                   ))}
@@ -1014,14 +999,13 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
                         {formatCurrencyBRL(item.custoTotalTotal)}
                       </td>
                       <td className={`${TD} text-center`}>
-                        <button
-                          type="button"
+                        <BotaoAcao
+                          icone={Trash2}
+                          titulo="Remover"
+                          descricao="Remover insumo da saída"
+                          tom="perigo"
                           onClick={() => setRemovendo({ tipo: 'S', idx, nome: item.descricao })}
-                          className={BTN_ACAO_EXCLUIR}
-                          title="Remover insumo da saída"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        />
                       </td>
                     </tr>
                   ))}
@@ -1115,14 +1099,13 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
                         {selectCc(item.idCc, (v) => handleAtualizarTecnico(idx, 'idCc', v))}
                       </td>
                       <td className={`${TD} text-center`}>
-                        <button
-                          type="button"
+                        <BotaoAcao
+                          icone={Trash2}
+                          titulo="Remover"
+                          descricao="Remover técnico"
+                          tom="perigo"
                           onClick={() => setRemovendo({ tipo: 'T', idx, nome: item.nomeTecnico })}
-                          className={BTN_ACAO_EXCLUIR}
-                          title="Remover técnico"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        />
                       </td>
                     </tr>
                   ))}
@@ -1170,18 +1153,21 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
       </div>
 
       {removendo && (
-        <ConfirmModal
+        <ConfirmDialog
           titulo={removendo.tipo === 'T' ? 'Remover técnico' : 'Remover item'}
           mensagem={
             <>
               Remover <strong>{removendo.nome}</strong> desta ordem de produção?
             </>
           }
-          textoConfirmar="Remover"
+          confirmar="Remover"
           onConfirmar={confirmarRemocao}
           onCancelar={() => setRemovendo(null)}
         />
       )}
+
+      {erro && <AvisoErro mensagem={erro} onFechar={() => setErro(null)} />}
+      {sucesso && <AvisoErro mensagem={sucesso} tom="sucesso" onFechar={() => setSucesso(null)} />}
 
       {/* Modais Anexados */}
       {modalLoteAberto && loteAlvo && (

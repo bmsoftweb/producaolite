@@ -4,8 +4,9 @@ import { config } from './config.js';
 /**
  * Cadastro dos servidores da bmAPI (MySQL bmapi.servidores).
  *
- * O número digitado no login é o id da tabela; a linha informa a URL, a porta e o
- * token (X-API-Key) da bmAPI daquele cliente. O token nunca sai do servidor Node.
+ * No login o usuário informa o token (X-API-Key) do seu servidor, e é por ele que a
+ * linha é encontrada: pelo número qualquer um poderia varrer o cadastro e ver a
+ * identificação dos outros clientes. O token nunca é devolvido ao navegador.
  */
 
 export interface Servidor {
@@ -58,28 +59,43 @@ export function montarBaseUrl(url: string, port: string): string {
 const CACHE_MS = 60_000;
 const cache = new Map<number, { servidor: Servidor | null; ate: number }>();
 
+function montarServidor(r: any): Servidor | null {
+  return r && r.url && r.token
+    ? {
+        numero: Number(r.id),
+        identificacao: String(r.identificacao || `Servidor ${r.id}`).trim(),
+        baseUrl: montarBaseUrl(r.url, r.port),
+        token: String(r.token).trim(),
+        config: lerConfig(r.config),
+      }
+    : null;
+}
+
+const SELECT = 'SELECT id, url, port, token, identificacao, config FROM servidores';
+
+/** Pelo número (id): usado pela sessão já autenticada, nunca pelo login */
 export async function buscarServidor(numero: number): Promise<Servidor | null> {
   if (!Number.isInteger(numero) || numero < 1 || numero > 999) return null;
 
   const emCache = cache.get(numero);
   if (emCache && emCache.ate > Date.now()) return emCache.servidor;
 
-  const [rows] = await pool.query<any[]>(
-    'SELECT id, url, port, token, identificacao, config FROM servidores WHERE id = ? LIMIT 1',
-    [numero],
-  );
-  const r = rows[0];
-  const servidor: Servidor | null =
-    r && r.url && r.token
-      ? {
-          numero: Number(r.id),
-          identificacao: String(r.identificacao || `Servidor ${r.id}`).trim(),
-          baseUrl: montarBaseUrl(r.url, r.port),
-          token: String(r.token).trim(),
-          config: lerConfig(r.config),
-        }
-      : null;
+  const [rows] = await pool.query<any[]>(`${SELECT} WHERE id = ? LIMIT 1`, [numero]);
+  const servidor = montarServidor(rows[0]);
 
   cache.set(numero, { servidor, ate: Date.now() + CACHE_MS });
+  return servidor;
+}
+
+/** Pelo token (X-API-Key) digitado no login; sem cache, para o token revogado parar de valer na hora */
+export async function buscarServidorPorToken(token: string): Promise<Servidor | null> {
+  const chave = String(token || '').trim();
+  if (!chave) return null;
+
+  const [rows] = await pool.query<any[]>(`${SELECT} WHERE token = ? LIMIT 1`, [chave]);
+  const servidor = montarServidor(rows[0]);
+
+  // O cache por número é compartilhado com a sessão: aproveita a linha já lida
+  if (servidor) cache.set(servidor.numero, { servidor, ate: Date.now() + CACHE_MS });
   return servidor;
 }

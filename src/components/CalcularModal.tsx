@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { Calculator, Sparkles } from 'lucide-react';
-import { INPUT_CLASS, LABEL_CLASS, FIELD_WRAPPER_CLASS } from '../utils/formStyles';
+import { INPUT_CLASS, LABEL_CLASS } from '@/components/FormCrm';
 
 interface CalcularModalProps {
   isOpen: boolean;
@@ -83,7 +83,7 @@ export const CalcularModal: React.FC<CalcularModalProps> = ({
 
             <div>
               <label className={LABEL_CLASS}>Nova Quantidade Desejada</label>
-              <div className={FIELD_WRAPPER_CLASS}>
+              <div >
                 <input
                   type="number"
                   step="any"
@@ -101,7 +101,7 @@ export const CalcularModal: React.FC<CalcularModalProps> = ({
           <div className="space-y-3">
             <div>
               <label className={LABEL_CLASS}>Fator Multiplicador (ex: 2 para dobrar, 0.5 para metade)</label>
-              <div className={FIELD_WRAPPER_CLASS}>
+              <div >
                 <input
                   type="number"
                   step="any"

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { Usuario } from '../types';
 import { salvarMeusDados } from '../services/api';
-import { INPUT_CLASS, LABEL_CLASS, FIELD_WRAPPER_CLASS } from '../utils/formStyles';
+import { INPUT_CLASS, LABEL_CLASS } from '@/components/FormCrm';
 import { KeyRound, Mail, Home, Check, AlertCircle } from 'lucide-react';
 
 interface MeusDadosModalProps {
@@ -93,7 +93,7 @@ export const MeusDadosModal: React.FC<MeusDadosModalProps> = ({
               <Mail size={14} /> E-mail
             </span>
           </label>
-          <div className={FIELD_WRAPPER_CLASS}>
+          <div >
             <input
               type="email"
               required
@@ -112,7 +112,7 @@ export const MeusDadosModal: React.FC<MeusDadosModalProps> = ({
               <Home size={14} /> Página Inicial
             </span>
           </label>
-          <div className={FIELD_WRAPPER_CLASS}>
+          <div >
             <select
               value={paginaInicial}
               onChange={(e) => setPaginaInicial(e.target.value)}
@@ -135,7 +135,7 @@ export const MeusDadosModal: React.FC<MeusDadosModalProps> = ({
           <div className="space-y-3">
             <div>
               <label className={LABEL_CLASS}>Nova Senha</label>
-              <div className={FIELD_WRAPPER_CLASS}>
+              <div >
                 <input
                   type="password"
                   value={senha}
@@ -149,7 +149,7 @@ export const MeusDadosModal: React.FC<MeusDadosModalProps> = ({
 
             <div>
               <label className={LABEL_CLASS}>Confirmar Nova Senha</label>
-              <div className={FIELD_WRAPPER_CLASS}>
+              <div >
                 <input
                   type="password"
                   value={senhaConfirma}

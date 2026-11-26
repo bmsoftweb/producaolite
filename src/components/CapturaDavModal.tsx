@@ -3,7 +3,7 @@ import { Modal } from './Modal';
 import { ItemDav } from '../types';
 import { fetchDavs } from '../services/api';
 import { formatDateBR, hojeISO, formatDecimal } from '../utils/formatters';
-import { INPUT_CLASS, LABEL_CLASS, FIELD_WRAPPER_CLASS } from '../utils/formStyles';
+import { INPUT_CLASS, LABEL_CLASS } from '@/components/FormCrm';
 import { FileText, Search, Loader2, Check, AlertCircle } from 'lucide-react';
 
 interface CapturaDavModalProps {
@@ -75,7 +75,7 @@ export const CapturaDavModal: React.FC<CapturaDavModalProps> = ({
         <form onSubmit={handleBuscar} className="p-3 bg-stone-50 dark:bg-stone-800/40 rounded-xl border border-stone-200 dark:border-stone-800 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
           <div className="sm:col-span-3">
             <label className={LABEL_CLASS}>Data Inicial</label>
-            <div className={FIELD_WRAPPER_CLASS}>
+            <div >
               <input
                 type="date"
                 value={d1}
@@ -87,7 +87,7 @@ export const CapturaDavModal: React.FC<CapturaDavModalProps> = ({
 
           <div className="sm:col-span-3">
             <label className={LABEL_CLASS}>Data Final</label>
-            <div className={FIELD_WRAPPER_CLASS}>
+            <div >
               <input
                 type="date"
                 value={d2}
@@ -99,7 +99,7 @@ export const CapturaDavModal: React.FC<CapturaDavModalProps> = ({
 
           <div className="sm:col-span-3">
             <label className={LABEL_CLASS}>Número do DAV (opcional)</label>
-            <div className={FIELD_WRAPPER_CLASS}>
+            <div >
               <input
                 type="number"
                 value={numDav}

@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Factory, Database, Mail, Lock, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Factory, KeyRound, Loader2, Lock, Mail, Moon, Sun } from 'lucide-react';
 import { login, consultarServidor } from '../services/api';
 import { Usuario, Empresa, ServidorInfo } from '../types';
-import {
-  lerLembrete,
-  salvarLembrete,
-  limparLembrete,
-  lerUltimoServidor,
-  salvarUltimoServidor,
-} from '../utils/session';
-import { ThemeToggle } from './ThemeToggle';
-import { INPUT_CLASS, LABEL_CLASS, FIELD_WRAPPER_CLASS } from '../utils/formStyles';
+import { lerLembrete, salvarLembrete, limparLembrete } from '../utils/session';
+import { useTheme } from '../context/ThemeContext';
+import { AvisoErro } from '@/components/AvisoErro';
+import { Toggle } from '@/components/Toggle';
+
+/** Tela de entrada no modelo do erp-compras: painel da marca à esquerda, formulário à direita */
+
+const LABEL = 'block text-[10px] font-bold uppercase tracking-widest ml-1 mb-1.5 text-stone-400 dark:text-stone-500';
+const INPUT =
+  'w-full bg-stone-50 dark:bg-stone-800/80 p-3 text-sm font-medium text-stone-800 dark:text-stone-100 placeholder:text-stone-400 placeholder:font-normal transition-all';
+const ICONE = 'absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500 pointer-events-none';
 
 interface LoginViewProps {
   onLoginSuccess: (dados: {
@@ -23,22 +25,25 @@ interface LoginViewProps {
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
-  const [servidor, setServidor] = useState<string>(() => lerUltimoServidor() || '1');
+  // Token (X-API-Key) do servidor do cliente: nunca fica guardado no navegador
+  const [tokenServidor, setTokenServidor] = useState('');
+  const [mostrarToken, setMostrarToken] = useState(false);
   const [servidorInfo, setServidorInfo] = useState<{ identificacao: string; connected: boolean } | null>(null);
   const [checandoServidor, setChecandoServidor] = useState(false);
 
   const [email, setEmail] = useState<string>(() => lerLembrete() || '');
-  const [senha, setSenha] = useState<string>('');
+  const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [lembrar, setLembrar] = useState<boolean>(() => !!lerLembrete());
 
-  const [loading, setLoading] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [entrando, setEntrando] = useState(false);
+  const [erro, setErro] = useState('');
+  const { theme, toggleTheme } = useTheme();
 
-  // Consulta status do servidor ao digitar
+  // Confere o token digitado e mostra de quem é o servidor
   useEffect(() => {
-    const num = parseInt(servidor, 10);
-    if (isNaN(num) || num <= 0) {
+    const chave = tokenServidor.trim();
+    if (chave.length < 8) {
       setServidorInfo(null);
       return;
     }
@@ -46,215 +51,282 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     const timer = setTimeout(async () => {
       setChecandoServidor(true);
       try {
-        const info = await consultarServidor(num);
-        setServidorInfo({
-          identificacao: info.identificacao,
-          connected: info.connected,
-        });
+        const info = await consultarServidor(chave);
+        setServidorInfo({ identificacao: info.identificacao, connected: info.connected });
       } catch {
-        setServidorInfo({ identificacao: 'Servidor inacessível', connected: false });
+        setServidorInfo(null);
       } finally {
         setChecandoServidor(false);
       }
     }, 450);
 
     return () => clearTimeout(timer);
-  }, [servidor]);
+  }, [tokenServidor]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const entrar = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErro(null);
-
-    const srvNum = parseInt(servidor, 10);
-    if (isNaN(srvNum) || srvNum <= 0) {
-      setErro('Informe um número de servidor válido.');
+    const chave = tokenServidor.trim();
+    if (!chave) {
+      setErro('Informe o token do seu servidor.');
       return;
     }
 
-    const emailLogin = email.trim() || 'admin';
-    const senhaLogin = senha || '';
-
+    setErro('');
+    setEntrando(true);
     try {
-      setLoading(true);
-      const res = await login(srvNum, emailLogin, senhaLogin);
+      const res = await login(chave, email.trim() || 'admin', senha);
 
-      // Salva preferências locais
-      salvarUltimoServidor(srvNum);
-      if (lembrar && email.trim()) {
-        salvarLembrete(email.trim());
-      } else {
-        limparLembrete();
-      }
+      // Só o usuário é lembrado; o token do servidor não é guardado
+      if (lembrar && email.trim()) salvarLembrete(email.trim());
+      else limparLembrete();
 
-      onLoginSuccess({
-        token: res.token,
-        usuario: res.usuario,
-        empresa: res.empresa,
-        servidor: res.servidor,
-        lembrar,
-      });
+      onLoginSuccess({ token: res.token, usuario: res.usuario, empresa: res.empresa, servidor: res.servidor, lembrar });
     } catch (err: any) {
       setErro(err.message || 'Falha ao autenticar. Verifique seus dados.');
     } finally {
-      setLoading(false);
+      setEntrando(false);
     }
   };
 
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-stone-100 dark:bg-stone-950 text-stone-900 dark:text-stone-100 relative transition-colors">
-      {/* Botão de Tema no canto superior */}
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
+  /** Marca: ícone + nome, no painel esquerdo e, no celular, acima do formulário */
+  const marca = (
+    <div className="flex items-center gap-2.5">
+      <div className="w-9 h-9 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-200/50 dark:shadow-none shrink-0">
+        <Factory className="w-5 h-5 text-white stroke-[2.2]" />
       </div>
-
-      <div className="w-full max-w-md bg-white dark:bg-stone-900 rounded-2xl shadow-xl border border-stone-200 dark:border-stone-800 p-8 space-y-6 animate-in fade-in zoom-in-95 duration-200">
-        {/* Topo do Card */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-white items-center justify-center shadow-lg shadow-amber-500/25 mb-1">
-            <Factory size={32} className="stroke-[2.2]" />
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-white">
-            Produção<span className="text-amber-500 font-extrabold">Lite</span>
-          </h2>
-          <p className="text-xs text-stone-500 dark:text-stone-400">
-            Controle de Ordens de Produção, Apontamentos e Custos
-          </p>
-        </div>
-
-        {/* Mensagem de Erro */}
-        {erro && (
-          <div className="flex items-start gap-2.5 p-3.5 text-xs text-red-700 bg-red-50 dark:bg-red-950/40 dark:text-red-300 rounded-xl border border-red-200 dark:border-red-900 animate-in fade-in">
-            <AlertCircle size={16} className="shrink-0 mt-0.5" />
-            <span>{erro}</span>
-          </div>
-        )}
-
-        {/* Formulário */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Servidor */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className={LABEL_CLASS}>
-                <span className="flex items-center gap-1.5">
-                  <Database size={13} /> Número do Servidor
-                </span>
-              </label>
-              {checandoServidor ? (
-                <span className="text-[11px] text-stone-400 flex items-center gap-1">
-                  <Loader2 size={11} className="animate-spin" /> Verificando...
-                </span>
-              ) : servidorInfo ? (
-                <span
-                  className={`text-[11px] flex items-center gap-1 font-medium ${
-                    servidorInfo.connected ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'
-                  }`}
-                >
-                  {servidorInfo.connected ? (
-                    <>
-                      <CheckCircle2 size={12} /> {servidorInfo.identificacao}
-                    </>
-                  ) : (
-                    'Inacessível'
-                  )}
-                </span>
-              ) : null}
-            </div>
-            <div className={FIELD_WRAPPER_CLASS}>
-              <input
-                type="number"
-                required
-                value={servidor}
-                onChange={(e) => setServidor(e.target.value)}
-                placeholder="Ex: 1"
-                className={INPUT_CLASS}
-                min="1"
-              />
-            </div>
-          </div>
-
-          {/* Usuário / Email */}
-          <div>
-            <label className={LABEL_CLASS}>
-              <span className="flex items-center gap-1.5">
-                <Mail size={13} /> Usuário ou E-mail <span className="text-[10px] text-stone-400 font-normal">(opcional)</span>
-              </span>
-            </label>
-            <div className={FIELD_WRAPPER_CLASS}>
-              <input
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin (ou em branco)"
-                className={INPUT_CLASS}
-                autoComplete="username"
-              />
-            </div>
-          </div>
-
-          {/* Senha */}
-          <div>
-            <label className={LABEL_CLASS}>
-              <span className="flex items-center gap-1.5">
-                <Lock size={13} /> Senha <span className="text-[10px] text-stone-400 font-normal">(opcional)</span>
-              </span>
-            </label>
-            <div className={`${FIELD_WRAPPER_CLASS} flex items-center`}>
-              <input
-                type={mostrarSenha ? 'text' : 'password'}
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                placeholder="•••••••• (opcional)"
-                className={`${INPUT_CLASS} pr-1`}
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                onClick={() => setMostrarSenha(!mostrarSenha)}
-                className="p-1.5 mr-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
-                title={mostrarSenha ? 'Ocultar senha' : 'Exibir senha'}
-              >
-                {mostrarSenha ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Lembrar usuário */}
-          <div className="flex items-center justify-between pt-1">
-            <label className="flex items-center gap-2 cursor-pointer text-xs text-stone-600 dark:text-stone-300">
-              <input
-                type="checkbox"
-                checked={lembrar}
-                onChange={(e) => setLembrar(e.target.checked)}
-                className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800"
-              />
-              <span>Lembrar meu usuário</span>
-            </label>
-          </div>
-
-          {/* Botão Entrar */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:from-amber-700 active:to-amber-800 transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
-          >
-            {loading ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                <span>Autenticando...</span>
-              </>
-            ) : (
-              <span>Entrar no Sistema</span>
-            )}
-          </button>
-        </form>
-
-        {/* Rodapé institucional */}
-        <div className="text-center pt-2 border-t border-stone-100 dark:border-stone-800">
-          <p className="text-[11px] text-stone-400">
-            BMsoft sistemas © 2026 — Integração via bmAPI
-          </p>
-        </div>
-      </div>
+      <span className="text-sm font-black tracking-wider uppercase text-stone-800 dark:text-stone-100">ProduçãoLite</span>
     </div>
+  );
+
+  return (
+    <main className="min-h-screen flex relative bg-white dark:bg-stone-900 text-stone-900 dark:text-white font-sans">
+      {/* Painel esquerdo: identidade visual (oculto em telas pequenas) */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col p-12 bg-white dark:bg-stone-950 isolate">
+        <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
+          {/* Engrenagens: marca d'água de um app de produção */}
+          <svg
+            viewBox="0 0 380 470"
+            aria-hidden="true"
+            className="absolute top-1/2 right-[6%] -translate-y-1/2 w-[min(440px,70%)] text-amber-200 dark:text-amber-400/25"
+          >
+            <g stroke="currentColor" fill="none" opacity={0.85}>
+              {/* Engrenagem maior */}
+              <circle cx={170} cy={190} r={90} strokeWidth={28} />
+              <circle cx={170} cy={190} r={26} fill="currentColor" stroke="none" />
+              {Array.from({ length: 12 }, (_, i) => (
+                <rect
+                  key={`g1-${i}`}
+                  x={156}
+                  y={56}
+                  width={28}
+                  height={32}
+                  rx={5}
+                  fill="currentColor"
+                  stroke="none"
+                  transform={`rotate(${i * 30} 170 190)`}
+                />
+              ))}
+            </g>
+
+            <g stroke="currentColor" fill="none" opacity={0.6}>
+              {/* Engrenagem menor, encaixada na primeira */}
+              <circle cx={288} cy={348} r={56} strokeWidth={20} />
+              <circle cx={288} cy={348} r={16} fill="currentColor" stroke="none" />
+              {Array.from({ length: 10 }, (_, i) => (
+                <rect
+                  key={`g2-${i}`}
+                  x={277}
+                  y={260}
+                  width={22}
+                  height={26}
+                  rx={4}
+                  fill="currentColor"
+                  stroke="none"
+                  transform={`rotate(${i * 36} 288 348)`}
+                />
+              ))}
+            </g>
+          </svg>
+          <div className="absolute top-[15%] left-[10%] w-[280px] h-[280px] rounded-[40%] rotate-12 blur-3xl bg-amber-100/70 dark:bg-amber-500/10" />
+          <div className="absolute bottom-[10%] right-[5%] w-[220px] h-[220px] rounded-[45%] -rotate-12 blur-2xl bg-orange-100/60 dark:bg-orange-500/10" />
+        </div>
+
+        {marca}
+
+        <div className="flex-1 flex flex-col justify-center">
+          <h1 className="text-6xl font-black leading-[0.95] tracking-tight text-stone-900 dark:text-white">
+            Ordens de<br />
+            <span className="text-amber-600 dark:text-amber-400">Produção</span>
+          </h1>
+          <p className="mt-4 text-sm font-medium max-w-xs text-stone-500 dark:text-stone-400">
+            Produtos fabricados, matérias-primas, lotes e custo da mão de obra.
+          </p>
+        </div>
+      </div>
+
+      {/* Painel direito: formulário de entrada */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 relative bg-stone-50 dark:bg-stone-900">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          title={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
+          className="absolute top-6 right-6 z-20 p-2 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+        >
+          {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+        </button>
+
+        <div className="w-full max-w-md">
+          <div className="flex lg:hidden mb-8">{marca}</div>
+
+          <h2 className="text-3xl font-black tracking-tight text-stone-900 dark:text-white">Entrar</h2>
+          <p className="text-sm font-medium mt-1.5 text-stone-500 dark:text-stone-400">
+            Informe o token do seu servidor bmAPI. Usuário e senha são os do sistema BMsoft.
+          </p>
+
+          {erro && <AvisoErro mensagem={erro} onFechar={() => setErro('')} />}
+
+          <form onSubmit={entrar} className="flex flex-col gap-5 mt-8">
+            <div>
+              <div className="flex items-center justify-between">
+                <label htmlFor="input-login-token" className={LABEL}>
+                  Token do servidor
+                </label>
+                {checandoServidor ? (
+                  <span className="text-[11px] text-stone-400 flex items-center gap-1 mb-1.5">
+                    <Loader2 size={11} className="animate-spin" /> Verificando…
+                  </span>
+                ) : servidorInfo ? (
+                  <span
+                    className={`text-[11px] font-medium flex items-center gap-1 mb-1.5 ${
+                      servidorInfo.connected ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                    }`}
+                  >
+                    <CheckCircle2 size={12} />
+                    {servidorInfo.identificacao}
+                    {!servidorInfo.connected && ' • fora do ar'}
+                  </span>
+                ) : null}
+              </div>
+              <div className="relative">
+                <KeyRound className={ICONE} />
+                <input
+                  id="input-login-token"
+                  type={mostrarToken ? 'text' : 'password'}
+                  required
+                  autoFocus
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={tokenServidor}
+                  onChange={(e) => {
+                    setTokenServidor(e.target.value);
+                    setErro('');
+                  }}
+                  onFocus={(e) => e.target.select()}
+                  className={`${INPUT} pl-11 pr-10`}
+                  placeholder="token (X-API-Key) do seu servidor"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarToken(!mostrarToken)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 cursor-pointer"
+                  tabIndex={-1}
+                  title={mostrarToken ? 'Esconder o token' : 'Mostrar o token'}
+                >
+                  {mostrarToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="input-login-usuario" className={LABEL}>
+                Usuário ou e-mail
+              </label>
+              <div className="relative">
+                <Mail className={ICONE} />
+                <input
+                  id="input-login-usuario"
+                  type="text"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setErro('');
+                  }}
+                  onFocus={(e) => e.target.select()}
+                  className={`${INPUT} pl-11`}
+                  placeholder="admin (ou em branco)"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="input-login-senha" className={LABEL}>
+                Senha
+              </label>
+              <div className="relative">
+                <Lock className={ICONE} />
+                <input
+                  id="input-login-senha"
+                  type={mostrarSenha ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={senha}
+                  onChange={(e) => {
+                    setSenha(e.target.value);
+                    setErro('');
+                  }}
+                  onFocus={(e) => e.target.select()}
+                  className={`${INPUT} pl-11 pr-10`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha(!mostrarSenha)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 cursor-pointer"
+                  tabIndex={-1}
+                  title={mostrarSenha ? 'Esconder a senha' : 'Mostrar a senha'}
+                >
+                  {mostrarSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="py-1">
+              <Toggle
+                id="input-login-lembrar"
+                checked={lembrar}
+                onChange={setLembrar}
+                size="sm"
+                label={
+                  <span className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                    Lembrar meu usuário
+                  </span>
+                }
+                title="Traz o usuário preenchido no próximo acesso. O token do servidor nunca é guardado."
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={entrando}
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-amber-200 dark:shadow-none transition-all flex items-center justify-center gap-2 mt-2 group disabled:opacity-70 cursor-pointer"
+            >
+              {entrando ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <span className="uppercase tracking-wide">Entrar</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="flex items-center justify-between mt-8 pt-4 border-t border-stone-200 dark:border-stone-800 text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+            <span>ProduçãoLite by BMsoft Sistemas</span>
+            <span className="normal-case">© {new Date().getFullYear()}</span>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 };

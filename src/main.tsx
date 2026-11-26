@@ -1,9 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 import { instalarSelecaoAoFocar } from './utils/selecaoAoFocar';
 import { Dica } from './components/Dica';
+import { ThemeProvider } from './context/ThemeContext';
 
 instalarSelecaoAoFocar();
 
@@ -16,7 +18,11 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <ThemeProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ThemeProvider>
     <Dica />
   </React.StrictMode>,
 );

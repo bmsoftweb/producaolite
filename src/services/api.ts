@@ -69,21 +69,28 @@ async function send<T = any>(method: string, url: string, body?: unknown): Promi
 // ------------------------------------------------------------
 // Autenticação
 // ------------------------------------------------------------
+/** `token` é o X-API-Key do servidor do cliente, digitado no login */
 export async function login(
-  servidor: number,
+  token: string,
   email: string,
   senha: string,
 ): Promise<{ token: string; usuario: Usuario; empresa: Empresa; servidor: ServidorInfo }> {
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ servidor, email, senha }),
+    body: JSON.stringify({ token, email, senha }),
   });
   return parseOrThrow(res);
 }
 
-export async function consultarServidor(numero: number): Promise<{ identificacao: string; connected: boolean; error?: string }> {
-  return get(`/api/servidores/${numero}`);
+/** Confere o token e devolve a identificação do servidor (POST: token não vai na URL) */
+export async function consultarServidor(token: string): Promise<{ numero: number; identificacao: string; connected: boolean; error?: string }> {
+  const res = await fetch('/api/servidores/verificar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  return parseOrThrow(res);
 }
 
 export async function validarSessao(): Promise<{ usuario: Usuario; empresa: Empresa; servidor: ServidorInfo }> {

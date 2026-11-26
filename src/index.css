@@ -2,51 +2,350 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Jost é a família padrão do painel (carregada em index.html).
-   Redefinir --font-sans faz o Tailwind aplicá-la em todo o app,
-   inclusive nas classes utilitárias font-sans. */
 @theme {
-  --font-sans: "Jost", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  /* Default variables (reused or overridden) */
+  --color-elegant-bg: var(--elegant-bg);
+  --color-elegant-sidebar: var(--elegant-sidebar);
+  --color-elegant-card: var(--elegant-card);
+  --color-elegant-border: var(--elegant-border);
+  --color-elegant-text: var(--elegant-text);
+  --color-elegant-text-bright: var(--elegant-text-bright);
+  --color-elegant-text-muted: var(--elegant-text-muted);
+  --color-elegant-text-label: var(--elegant-text-label);
+  --color-elegant-accent: var(--elegant-accent);
+  --color-elegant-accent-bg: var(--elegant-accent-bg);
 }
 
 :root {
-  color-scheme: light;
-
-  /* Altura compartilhada pelo topo da sidebar e pelo header da área de
-     trabalho, para que a borda inferior dos dois fique na mesma linha. */
-  --altura-topo: 4.375rem; /* 70px */
+  /* Light Theme */
+  /* Paleta do crmWeb: stone, com o âmbar do ProduçãoLite como destaque */
+  --elegant-bg: #f5f5f4;
+  --elegant-sidebar: #ffffff;
+  --elegant-card: #ffffff;
+  --elegant-border: #e7e5e4;
+  --elegant-text: #57534e;
+  --elegant-text-bright: #1c1917;
+  --elegant-text-muted: #78716c;
+  --elegant-text-label: #a8a29e;
+  --elegant-accent: #d97706;
+  --elegant-accent-bg: #fffbeb;
+  --altura-topo: 4.375rem; /* topo da sidebar = header das telas */
+  --larg-menu: 16rem; /* sidebar aberta (w-64); recolhida = 4rem */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
 }
 
 :root.dark {
-  color-scheme: dark;
+  /* Dark Theme */
+  --elegant-bg: #0c0a09;
+  --elegant-sidebar: #1c1917;
+  --elegant-card: #1c1917;
+  --elegant-border: #292524;
+  --elegant-text: #d6d3d1;
+  --elegant-text-bright: #f5f5f4;
+  --elegant-text-muted: #a8a29e;
+  --elegant-text-label: #78716c;
+  --elegant-accent: #fbbf24;
+  --elegant-accent-bg: rgba(69, 26, 3, 0.45);
 }
 
-html, body {
-  min-height: 100%;
-  font-family: var(--font-sans);
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: "Jost", ui-sans-serif, system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    scrollbar-width: none;
+  }
+  html {
+    @apply font-sans;
+    scrollbar-width: none;
+  }
+  /* Barras de rolagem no tom do tema (no escuro a nativa ficava branca) */
+  * {
+    scrollbar-color: rgba(120, 113, 108, 0.45) transparent;
+  }
+  .dark * {
+    scrollbar-color: rgba(168, 162, 158, 0.35) transparent;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .no-vertical-scrollbar::-webkit-scrollbar:vertical {
+    display: none;
+  }
+  .no-vertical-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .no-vertical-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(150, 150, 150, 0.3);
+    border-radius: 4px;
+  }
+  .no-vertical-scrollbar::-webkit-scrollbar {
+    height: 8px; /* Set height for the horizontal scrollbar */
+  }
+}
+
 
 /* ==========================================
-   CAMPOS DE ENTRADA (padrão visual global)
-   ==========================================
-   Campos de digitação não têm moldura, só uma barra de 2px na borda esquerda
-   indicando se o campo é obrigatório (âmbar) ou opcional (verde). */
-:where(input, select, textarea):where(:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]):not([type="hidden"])) {
-  border: 0 solid transparent !important;
+   CAMPOS DE ENTRADA
+   Moldura de 1px com cantos arredondados; barra de 2px à esquerda: verde = opcional, âmbar = obrigatório
+   (atributo required; no .campo-botao, data-obrigatorio). Foco: moldura de 2px na cor da barra e fundo um pouco mais escuro.
+   .campo-botao = botão que faz papel de campo (ex.: abre um modal de escolha).
+   ========================================== */
+:where(input, select, textarea):where(:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]):not([type="hidden"])),
+:where(.campo-botao) {
+  border: 1px solid rgba(120, 113, 108, 0.22) !important;
+  --campo-cor: #10b981;
   border-left-width: 2px !important;
-  border-left-color: #10b981 !important; /* emerald-500 – campo opcional */
+  border-left-color: var(--campo-cor) !important;
+  border-radius: 0.375rem !important;
+}
+:where(input, select, textarea):where(:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]):not([type="hidden"])):where(:required),
+:where(.campo-botao[data-obrigatorio]) {
+  --campo-cor: #eab308;
+}
+/* Foco: moldura de 2px na cor da barra (borda de 1px + sombra interna de 1px, o campo não muda de tamanho) */
+:where(input, select, textarea):where(:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]):not([type="hidden"])):focus,
+:where(.campo-botao):focus-visible {
+  outline: none !important;
+  border-top-color: var(--campo-cor) !important;
+  border-right-color: var(--campo-cor) !important;
+  border-bottom-color: var(--campo-cor) !important;
+  box-shadow: inset 0 1px 0 var(--campo-cor), inset -1px 0 0 var(--campo-cor), inset 0 -1px 0 var(--campo-cor) !important;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06)) !important;
+}
+
+/* Tabela de digitação com cara de planilha (itens, parcelas): o campo ocupa a célula inteira,
+   sem moldura nem cantos; as linhas da tabela fazem a grade e a barra da esquerda continua */
+table.planilha td:has(input, select, .campo-botao) {
+  padding: 0;
+}
+table.planilha :where(input, select, .campo-botao) {
+  border-top-width: 0 !important;
+  border-right-width: 0 !important;
+  border-bottom-width: 0 !important;
   border-radius: 0 !important;
 }
-
-:where(input, select, textarea):where(:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]):not([type="hidden"])):where(:required) {
-  border-left-color: #f59e0b !important; /* amber-500 – campo obrigatório */
+/* Na célula não há borda: os 2px do foco vêm todos da sombra interna */
+table.planilha :where(input, select):focus,
+table.planilha .campo-botao:focus-visible {
+  box-shadow: inset 0 2px 0 var(--campo-cor), inset -2px 0 0 var(--campo-cor), inset 0 -2px 0 var(--campo-cor) !important;
+}
+/* Campo sozinho na célula ocupa a altura toda da linha (ela cresce com a célula mais alta, ex.: Estoque em 2 linhas);
+   o height: 1px na célula é o que deixa o 100% do filho valer dentro da tabela */
+table.planilha td:has(> :only-child:is(input, select), > div:only-child > .campo-botao) {
+  height: 1px;
+}
+table.planilha td > :only-child:is(input, select),
+table.planilha td > div:only-child:has(> .campo-botao),
+table.planilha td > div:only-child > .campo-botao {
+  height: 100%;
+}
+table.planilha select {
+  align-items: center; /* select customizável é flex: o texto não centraliza sozinho */
 }
 
-/* Campo em foco: nenhuma moldura/anel, só o fundo um pouco mais escuro (camada
-   translúcida por cima, funciona sobre qualquer fundo). */
-:where(input, select, textarea):where(:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]):not([type="hidden"])):focus {
-  outline: none !important;
-  box-shadow: none !important;
-  background-image: linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06)) !important;
+/* Lista aberta do select com a mesma moldura arredondada (select customizável: Chrome/Edge 135+;
+   os outros navegadores ignoram e mostram a lista nativa) */
+@supports (appearance: base-select) {
+  select:not([multiple]),
+  select:not([multiple])::picker(select) {
+    appearance: base-select;
+  }
+  select:not([multiple])::picker(select) {
+    border: 1px solid rgba(120, 113, 108, 0.22);
+    border-radius: 0.375rem;
+    margin-top: 2px;
+    padding: 4px 0;
+    background: #fff;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+  }
+  .dark select:not([multiple])::picker(select) {
+    background: #1c1917;
+  }
+  select:not([multiple]) option {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    color: #292524;
+  }
+  .dark select:not([multiple]) option {
+    color: #f5f5f4;
+  }
+  select:not([multiple]) option::checkmark {
+    display: none;
+  }
+  /* Seta: chevron fino cinza no lugar do triângulo preto; vira para cima com a lista aberta */
+  select:not([multiple]) {
+    column-gap: 6px; /* espaço mínimo entre o texto e a seta */
+  }
+  select:not([multiple])::picker-icon {
+    content: '';
+    width: 14px;
+    height: 14px;
+    margin-left: auto; /* encostada à direita, como a seta nativa */
+    flex-shrink: 0;
+    background-color: #a8a29e;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+    transition: rotate 0.15s;
+  }
+  select:not([multiple]):hover::picker-icon {
+    background-color: #57534e;
+  }
+  .dark select:not([multiple]):hover::picker-icon {
+    background-color: #d6d3d1;
+  }
+  select:not([multiple]):open::picker-icon {
+    rotate: 180deg;
+  }
+  /* Lista aberta: o foco vai para as opções, mas o campo continua com a moldura do foco */
+  select:not([multiple]):open {
+    border-top-color: var(--campo-cor) !important;
+    border-right-color: var(--campo-cor) !important;
+    border-bottom-color: var(--campo-cor) !important;
+    box-shadow: inset 0 1px 0 var(--campo-cor), inset -1px 0 0 var(--campo-cor), inset 0 -1px 0 var(--campo-cor) !important;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06)) !important;
+  }
+  select:not([multiple]) option:hover,
+  select:not([multiple]) option:focus-visible {
+    background: #eff6ff;
+    outline: none;
+  }
+  select:not([multiple]) option:checked {
+    background: #2563eb;
+    color: #fff;
+  }
+  .dark select:not([multiple]) option:hover,
+  .dark select:not([multiple]) option:focus-visible {
+    background: rgba(23, 37, 84, 0.6);
+  }
+}
+
+/* Layout customizável dos campos do formulário (FormCrm): largura em colunas do grid de 4 e altura do controle */
+@media (min-width: 64rem) {
+  .campo-span {
+    grid-column: span var(--span) / span var(--span);
+  }
+}
+.campo-altura :is(input:not([type='file']), select, textarea) {
+  height: var(--altura);
 }

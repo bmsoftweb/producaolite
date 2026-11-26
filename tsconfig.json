@@ -12,6 +12,9 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "paths": {
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/context/*": ["./src/context/*"],
       "@/*": ["./*"]
     },
     "allowImportingTsExtensions": true,
