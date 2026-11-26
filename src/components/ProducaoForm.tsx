@@ -643,6 +643,9 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
   /** Célula com campo editável: menos respiro vertical que a célula de texto */
   const TD_CAMPO = `${TD} !py-1`;
 
+  /** Cada seção da OP num container próprio, para não ficar tudo grudado */
+  const CARD = 'rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 overflow-hidden';
+
   const tituloSecao = (
     icone: React.ReactNode,
     titulo: string,
@@ -650,7 +653,7 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
     resumo: React.ReactNode,
     fundo = 'bg-stone-50 dark:bg-stone-950/60',
   ) => (
-    <div className={`px-4 py-2.5 border-y border-stone-200 dark:border-stone-800 ${fundo} flex flex-wrap items-center justify-between gap-3`}>
+    <div className={`px-4 py-2.5 border-b border-stone-200 dark:border-stone-800 ${fundo} flex flex-wrap items-center justify-between gap-3`}>
       <div className="flex items-center gap-2">
         {icone}
         <h3 className="text-xs font-bold text-stone-800 dark:text-stone-100 uppercase tracking-wider">{titulo}</h3>
@@ -793,10 +796,10 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
       </div>
 
       {/* Corpo rolável */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
 
         {/* Cabeçalho da OP */}
-        <div className="px-4 py-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className={`${CARD} p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4`}>
           <div>
             <label className={LABEL_CLASS}>Data da OP</label>
             <DateField value={op.data} onChange={(v) => setOp({ ...op, data: v })} required className={campo} />
@@ -836,6 +839,7 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
         </div>
 
         {/* SEÇÃO 1: ENTRADAS (Produtos Acabados Gerados) */}
+        <section className={CARD}>
         {tituloSecao(
           <ArrowDownLeft size={16} className="text-emerald-500" />,
           '1. Entradas — Produtos Acabados Gerados',
@@ -917,8 +921,10 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
             </tbody>
           </table>
         </div>
+        </section>
 
         {/* SEÇÃO 2: SAÍDAS (Insumos e Matérias-Primas Consumidas) */}
+        <section className={CARD}>
         {tituloSecao(
           <ArrowUpRight size={16} className="text-blue-500" />,
           '2. Saídas — Insumos e Matérias-Primas Consumidas',
@@ -927,7 +933,7 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
             Total insumos:{' '}
             <strong className="text-blue-600 dark:text-blue-400 font-mono">{formatCurrencyBRL(totalCustoSaidas)}</strong>
           </>,
-          'bg-rose-50 dark:bg-rose-950/30',
+          'bg-blue-50 dark:bg-blue-950/30',
         )}
         {buscaProduto(
           buscaSaida,
@@ -1012,8 +1018,10 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
             </tbody>
           </table>
         </div>
+        </section>
 
         {/* SEÇÃO 3: TÉCNICOS E MÃO DE OBRA */}
+        <section className={CARD}>
         {tituloSecao(
           <Users size={16} className="text-purple-500" />,
           '3. Mão de Obra — Técnicos & Operadores',
@@ -1022,7 +1030,7 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
             Total mão de obra:{' '}
             <strong className="text-purple-600 dark:text-purple-400 font-mono">{formatCurrencyBRL(totalCustoTecnicos)}</strong>
           </>,
-          'bg-sky-50 dark:bg-sky-950/30',
+          'bg-purple-50 dark:bg-purple-950/30',
         )}
         <div className="px-4 py-2.5 border-b border-stone-200 dark:border-stone-800 flex flex-wrap items-center gap-2">
           <span className="text-[11px] font-semibold text-stone-500">Adicionar técnico:</span>
@@ -1112,6 +1120,7 @@ export const ProducaoForm: React.FC<ProducaoFormProps> = ({
             </tbody>
           </table>
         </div>
+        </section>
       </div>
 
       {/* Barra de totais e ações, fixa ao pé da tela */}

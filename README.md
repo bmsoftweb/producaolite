@@ -62,6 +62,11 @@ Do ERP: `PRODUTOSPRINCIPAL`, `PRODUTOSREFERENCIA`, `PRODUTOSREFEMPRESA`, `PRODUT
 
 ## Histórico
 
+### 1.0.4
+- Nova OP: cada seção (Entradas, Saídas, Mão de Obra) num container próprio, com
+  moldura e respiro entre os blocos, em vez de faixas coladas; o cabeçalho da OP também
+  virou um card. A faixa de título passou a usar o tom do bloco (verde, azul e roxo).
+
 ### 1.0.3
 - Layout e stack do **erp-compras** em todo o app: `globals.css` (campos com moldura e
   barra à esquerda, select customizado, tabelas `planilha`), `ListaCrm` nas listas,
